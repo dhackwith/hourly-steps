@@ -34,7 +34,7 @@ class ReminderNotifier(
     private val stepsRepository: StepsRepository,
     private val clock: Clock,
     private val isUiVisible: () -> Boolean,
-) {
+) : ReminderPresenter {
     private val notificationManager: NotificationManager
         get() = context.getSystemService(NotificationManager::class.java)
 
@@ -80,7 +80,7 @@ class ReminderNotifier(
     // NEW_TASK is required to start an activity from the application context; the activity is
     // noHistory and excluded from recents, which is what the WearRecents check is guarding.
     @SuppressLint("WearRecents")
-    suspend fun show(result: CheckResult, settings: Settings, plan: DayPlan?, slot: Slot?, now: ZonedDateTime, todayTotal: Int) {
+    override suspend fun show(result: CheckResult, settings: Settings, plan: DayPlan?, slot: Slot?, now: ZonedDateTime, todayTotal: Int) {
         if (result == CheckResult.None) return
         syncChannels(settings.vibration)
         if (isUiVisible()) {
@@ -161,7 +161,7 @@ class ReminderNotifier(
     private fun moreStepsText(need: Int, slotMinutes: Int): String =
         context.resources.getQuantityString(R.plurals.notif_more_steps, need, formatSteps(need), SlotWording.current(slotMinutes))
 
-    fun cancel() {
+    override fun cancel() {
         notificationManager.cancel(NOTIFICATION_ID)
     }
 

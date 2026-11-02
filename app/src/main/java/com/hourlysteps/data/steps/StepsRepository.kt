@@ -12,6 +12,7 @@ import androidx.health.services.client.data.PassiveListenerConfig
 import com.hourlysteps.data.db.StepPointDao
 import com.hourlysteps.data.db.StepPointEntity
 import com.hourlysteps.domain.Slot
+import com.hourlysteps.domain.StepCounts
 import com.hourlysteps.domain.StepPoint
 import java.time.Clock
 import java.time.Instant
@@ -29,7 +30,7 @@ class StepsRepository(
     private val context: Context,
     private val dao: StepPointDao,
     private val clock: Clock,
-) {
+) : StepCounts {
     private val client: PassiveMonitoringClient
         get() = HealthServices.getClient(context).passiveMonitoringClient
 
@@ -57,7 +58,7 @@ class StepsRepository(
     }
 
     /** Ask Health Services to deliver any batched data now. Bounded so a check can never hang. */
-    suspend fun flush() {
+    override suspend fun flush() {
         val done = withTimeoutOrNull(FLUSH_TIMEOUT_MS) {
             runCatching { client.flushAsync().await() }
                 .onFailure { Log.w(TAG, "flush failed", it) }
@@ -77,10 +78,10 @@ class StepsRepository(
         if (entities.isNotEmpty()) dao.insertAll(entities)
     }
 
-    suspend fun stepsInSlot(slot: Slot): Int =
+    override suspend fun stepsInSlot(slot: Slot): Int =
         dao.sumBetween(millis(slot.startAt(clock.zone)), millis(slot.endAt(clock.zone)))
 
-    suspend fun dayTotal(date: LocalDate): Int =
+    override suspend fun dayTotal(date: LocalDate): Int =
         dao.sumBetween(dayStart(date), dayStart(date.plusDays(1)))
 
     fun observeStepsInSlot(slot: Slot?): Flow<Int> =
@@ -101,7 +102,7 @@ class StepsRepository(
     suspend fun earliestStepDay(): LocalDate? =
         dao.earliestEndMillis()?.let { Instant.ofEpochMilli(it).atZone(clock.zone).toLocalDate() }
 
-    suspend fun pruneOlderThan(days: Long) {
+    override suspend fun pruneOlderThan(days: Long) {
         dao.pruneBefore(dayStart(ZonedDateTime.now(clock).toLocalDate().minusDays(days)))
     }
 

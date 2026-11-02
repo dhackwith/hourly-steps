@@ -53,9 +53,9 @@ class CelebrationActivity : ComponentActivity() {
         // Launched by a full-screen intent while the screen is off: wake it and show over the lock.
         setShowWhenLocked(true)
         setTurnScreenOn(true)
-        getSystemService(NotificationManager::class.java).cancel(CelebrationManager.NOTIFICATION_ID)
+        getSystemService(NotificationManager::class.java).cancel(AndroidCelebrationSurface.NOTIFICATION_ID)
         val container = (application as HourlyStepsApp).container
-        container.celebrationManager.onScreenOpened()
+        container.celebrationSurface.onScreenOpened()
         val vibration = if (savedInstanceState == null) intent.getLongArrayExtra(EXTRA_VIBRATION) else null
 
         val celebration = celebrationFrom(intent)

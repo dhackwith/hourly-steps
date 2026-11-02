@@ -7,6 +7,7 @@ import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.domain.DayRecord
 import com.hourlysteps.domain.DayResult
 import com.hourlysteps.domain.StreakInfo
+import com.hourlysteps.domain.StreakTracker
 import com.hourlysteps.domain.Streaks
 import java.time.Clock
 import java.time.LocalDate
@@ -31,9 +32,9 @@ class StreakRepository(
     private val stepsRepository: StepsRepository,
     private val settingsRepository: SettingsRepository,
     private val clock: Clock,
-) {
+) : StreakTracker {
 
-    suspend fun finalizePastDays() {
+    override suspend fun finalizePastDays() {
         val today = ZonedDateTime.now(clock).toLocalDate()
         val start = Streaks.firstUnrecordedDay(
             lastRecorded = dao.latestDate()?.let(LocalDate::parse),
@@ -53,7 +54,7 @@ class StreakRepository(
     }
 
     /** The streak right now. Call [finalizePastDays] first if a new day may have started. */
-    suspend fun current(): StreakInfo {
+    override suspend fun current(): StreakInfo {
         val today = ZonedDateTime.now(clock).toLocalDate()
         val todayResult = Streaks.todayResult(settingsRepository.current(), today, stepsRepository.dayTotal(today))
         return Streaks.compute(dao.all().map { it.toRecord() }, today, todayResult)

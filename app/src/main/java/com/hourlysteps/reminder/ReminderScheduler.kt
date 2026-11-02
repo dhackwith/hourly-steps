@@ -8,6 +8,7 @@ import android.os.Build
 import android.util.Log
 import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.domain.ReminderSchedule
+import com.hourlysteps.domain.StepCheckAlarm
 import java.time.Clock
 import java.time.ZonedDateTime
 
@@ -21,7 +22,7 @@ class ReminderScheduler(
     private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val clock: Clock,
-) {
+) : ReminderAlarms, StepCheckAlarm {
     private val alarmManager: AlarmManager
         get() = context.getSystemService(AlarmManager::class.java)
 
@@ -32,7 +33,7 @@ class ReminderScheduler(
      * Computes and arms the next check strictly after [after], or cancels the alarm when no check
      * is coming (every day off, or paused until resumed). Safe to call repeatedly.
      */
-    suspend fun ensureScheduled(after: ZonedDateTime = ZonedDateTime.now(clock)): ZonedDateTime? {
+    override suspend fun ensureScheduled(after: ZonedDateTime): ZonedDateTime? {
         val next = ReminderSchedule.nextCheckTime(after, settingsRepository.current())
         if (next == null) {
             cancel()
@@ -43,6 +44,8 @@ class ReminderScheduler(
         scheduleSlotChange()
         return next
     }
+
+    suspend fun ensureScheduled(): ZonedDateTime? = ensureScheduled(ZonedDateTime.now(clock))
 
     fun cancel() {
         alarmManager.cancel(pendingIntent(0L))
@@ -78,7 +81,7 @@ class ReminderScheduler(
      * exact-alarm permission it may run later than asked; a follow-up that lands after its slot
      * has ended is skipped as late.
      */
-    fun scheduleFollowUp(at: ZonedDateTime, kind: FollowUpKind) {
+    override fun scheduleFollowUp(at: ZonedDateTime, kind: FollowUpKind) {
         val millis = at.toInstant().toEpochMilli()
         val pi = followUpIntent(millis, kind)
         if (canScheduleExact()) {
@@ -89,11 +92,8 @@ class ReminderScheduler(
         Log.d(TAG, "$kind scheduled for $at")
     }
 
-    /**
-     * Arms a look at the latest steps about a minute from now, replacing any already armed. Without
-     * the exact-alarm permission it may run a few minutes later, which still beats waiting.
-     */
-    fun scheduleStepCheck() {
+    /** Without the exact-alarm permission it may run a few minutes later, which still beats waiting. */
+    override fun scheduleStepCheck() {
         val millis = clock.millis() + STEP_CHECK_DELAY_MS
         val pi = PendingIntent.getBroadcast(
             context,

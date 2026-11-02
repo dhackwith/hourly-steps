@@ -7,7 +7,9 @@ import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.room.Room
+import com.hourlysteps.celebration.AndroidCelebrationSurface
 import com.hourlysteps.celebration.CelebrationManager
+import com.hourlysteps.celebration.PrefsCelebrationMemory
 import com.hourlysteps.data.db.AppDatabase
 import com.hourlysteps.data.db.MIGRATION_1_2
 import com.hourlysteps.data.db.MIGRATION_2_3
@@ -20,6 +22,7 @@ import com.hourlysteps.data.steps.StreakRepository
 import com.hourlysteps.domain.AppTheme
 import com.hourlysteps.domain.CheckRecord
 import com.hourlysteps.domain.SystemZoneClock
+import com.hourlysteps.reminder.Charger
 import com.hourlysteps.reminder.ReminderCheck
 import com.hourlysteps.reminder.ReminderNotifier
 import com.hourlysteps.reminder.ReminderScheduler
@@ -57,15 +60,15 @@ class AppContainer(private val context: Context) {
     val reminderNotifier = ReminderNotifier(context, settingsRepository, stepsRepository, clock, isUiVisible = { uiVisible })
     val reminderScheduler = ReminderScheduler(context, settingsRepository, clock)
     val reminderCheck = ReminderCheck(
-        context = context,
-        settingsRepository = settingsRepository,
-        stepsRepository = stepsRepository,
-        activityStore = activityStore,
-        streakRepository = streakRepository,
+        settingsSource = settingsRepository,
+        stepCounts = stepsRepository,
+        activitySource = activityStore,
+        streakTracker = streakRepository,
         notifier = reminderNotifier,
-        scheduler = reminderScheduler,
+        alarms = reminderScheduler,
         checkLogDao = database.checkLogDao(),
-        surfaceUpdater = surfaceUpdater,
+        surfaces = surfaceUpdater,
+        isOnCharger = { Charger.isConnected(context) },
         clock = clock,
     )
 
@@ -89,16 +92,17 @@ class AppContainer(private val context: Context) {
         startedScreens.decrementAndGet()
     }
 
+    val celebrationSurface = AndroidCelebrationSurface(context, reminderNotifier, isUiVisible = { uiVisible })
+
     val celebrationManager = CelebrationManager(
-        context = context,
-        reminderScheduler = reminderScheduler,
-        settingsRepository = settingsRepository,
-        stepsRepository = stepsRepository,
-        activityStore = activityStore,
-        streakRepository = streakRepository,
-        reminderNotifier = reminderNotifier,
+        surface = celebrationSurface,
+        memory = PrefsCelebrationMemory(context),
+        stepCheckAlarm = reminderScheduler,
+        settingsSource = settingsRepository,
+        stepCounts = stepsRepository,
+        activitySource = activityStore,
+        streakTracker = streakRepository,
         clock = clock,
-        isUiVisible = { uiVisible },
     )
 
     fun hasActivityRecognition(): Boolean =

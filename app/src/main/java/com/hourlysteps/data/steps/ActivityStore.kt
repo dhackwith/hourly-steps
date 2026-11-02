@@ -2,11 +2,12 @@ package com.hourlysteps.data.steps
 
 import android.content.Context
 import androidx.core.content.edit
+import com.hourlysteps.domain.ActivitySource
 import com.hourlysteps.domain.ActivityState
 import com.hourlysteps.domain.UserActivity
 
 /** Remembers the last activity Health Services reported. It only tells us when it changes. */
-class ActivityStore(context: Context) {
+class ActivityStore(context: Context) : ActivitySource {
 
     private val prefs = context.getSharedPreferences("activity", Context.MODE_PRIVATE)
 
@@ -17,8 +18,7 @@ class ActivityStore(context: Context) {
         }
     }
 
-    /** What to believe the wearer is doing at [nowMillis]. */
-    fun currentAt(nowMillis: Long): UserActivity {
+    override fun currentAt(nowMillis: Long): UserActivity {
         val activity = prefs.getString(KEY_ACTIVITY, null)
             ?.let { runCatching { UserActivity.valueOf(it) }.getOrNull() }
             ?: return UserActivity.UNKNOWN

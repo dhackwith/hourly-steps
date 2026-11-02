@@ -46,7 +46,7 @@ fun PermissionsScreen(container: AppContainer, onDone: () -> Unit) {
     val activityOk = remember(refresh) { container.hasActivityRecognition() }
     val notifOk = remember(refresh) { container.hasNotificationPermission() }
     val exactOk = remember(refresh) { container.reminderScheduler.canScheduleExact() }
-    val fullScreenOk = remember(refresh) { container.celebrationManager.canUseFullScreenIntent() }
+    val fullScreenOk = remember(refresh) { container.celebrationSurface.canUseFullScreenIntent() }
 
     ScreenScaffold(scrollState = listState) { padding ->
         ScalingLazyColumn(state = listState, contentPadding = padding) {
