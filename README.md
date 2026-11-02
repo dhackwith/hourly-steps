@@ -15,12 +15,15 @@ different rhythm? Reminders can also come every 30 minutes or every 2 hours.
 - Once the daily goal is met, goal reminders stop. Optional **Inactivity reminders** keep checking
   against a smaller per-hour threshold (default 250). The threshold is a rate, so every 30 minutes
   it asks for half as much and every 2 hours for twice as much.
-- Reaching this hour's goal is celebrated once per hour: a "da-da-daaa" buzz, then a fireworks
+- Reaching this hour's goal is celebrated once per hour: a strong "da-da-daaa" buzz, twice, and a fireworks
   screen takes over the watch, even when it is asleep or another app is open, and closes itself
   after a few seconds. This needs the permission described under
   [Install on the watch](#install-on-the-watch). Without it, or during Do Not Disturb or Bedtime
   mode, you get a "🎉 Hourly goal achieved!" notification instead, and Do Not Disturb and Bedtime
   mode also leave the screen asleep.
+- The watch hands steps to the app in batches that can be minutes apart. Within 400 steps of a goal the
+  app asks for them about once a minute while you keep walking, so the moment lands close to the real
+  one. A screen that opened by itself also leaves a silent notification for an hour, in case you missed it.
 - Reaching your daily goal gets a bigger moment: gold fireworks, today's total and your streak.
   Each celebration has its own switch in Settings.
 - **Streaks** count the days in a row you hit your goal. Days off and paused days neither extend

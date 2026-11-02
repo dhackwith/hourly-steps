@@ -63,6 +63,25 @@ class ReminderScheduler(
         Log.d(TAG, "$kind scheduled for $at")
     }
 
+    /**
+     * Arms a look at the latest steps about a minute from now, replacing any already armed. Without
+     * the exact-alarm permission it may run a few minutes later, which still beats waiting.
+     */
+    fun scheduleStepCheck() {
+        val millis = clock.millis() + STEP_CHECK_DELAY_MS
+        val pi = PendingIntent.getBroadcast(
+            context,
+            STEP_CHECK_REQUEST_CODE,
+            Intent(context, ReminderReceiver::class.java).setAction(ReminderReceiver.ACTION_CHECK_STEPS),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        if (canScheduleExact()) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)
+        } else {
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)
+        }
+    }
+
     fun cancelFollowUp() {
         alarmManager.cancel(followUpIntent(0L, FollowUpKind.SNOOZE))
     }
@@ -108,6 +127,8 @@ class ReminderScheduler(
 
     private companion object {
         const val REQUEST_CODE = 1
+        const val STEP_CHECK_REQUEST_CODE = 4
+        const val STEP_CHECK_DELAY_MS = 60_000L
         const val FOLLOW_UP_REQUEST_CODE = 3
         const val FALLBACK_WINDOW_MS = 10 * 60 * 1000L
     }

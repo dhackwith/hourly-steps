@@ -26,6 +26,7 @@ import com.hourlysteps.domain.VibrationStrength
 import com.hourlysteps.reminder.Attention
 import com.hourlysteps.reminder.Haptics
 import com.hourlysteps.reminder.ReminderNotifier
+import com.hourlysteps.reminder.ReminderScheduler
 import com.hourlysteps.ui.formatSteps
 import java.time.Clock
 import java.time.ZonedDateTime
@@ -42,9 +43,13 @@ private const val TAG = "CelebrationManager"
  * is posted with a full-screen intent, which launches the celebration when the watch screen is
  * off (like an alarm) and shows as a heads-up alert when it is on. If the full-screen intent
  * permission is not granted, the notification still alerts and tapping it opens the celebration.
+ *
+ * A screen opened from the background is gone in seconds and may go unseen, so it leaves a silent
+ * notification behind.
  */
 class CelebrationManager(
     private val context: Context,
+    private val reminderScheduler: ReminderScheduler,
     private val settingsRepository: SettingsRepository,
     private val stepsRepository: StepsRepository,
     private val activityStore: ActivityStore,
@@ -61,8 +66,12 @@ class CelebrationManager(
     private val notificationManager: NotificationManager
         get() = context.getSystemService(NotificationManager::class.java)
 
-    /** Called after each batch of new step data. */
-    suspend fun onStepsRecorded() {
+    /**
+     * Called after each batch of new step data. Close to a goal it also arranges to ask for steps
+     * again soon, because batches can arrive minutes apart. A look that finds no new steps ends
+     * that, so standing still near a goal costs nothing.
+     */
+    suspend fun onStepsRecorded(hadNewSteps: Boolean = true) {
         val now = ZonedDateTime.now(clock)
         val date = now.toLocalDate()
         val settings = settingsRepository.current()
@@ -105,6 +114,20 @@ class CelebrationManager(
             prefs.edit { putString(KEY_LAST_SLOT, slotKey) }
             celebrate(hourly)
         }
+
+        val left = CelebrationDecider.stepsToNext(
+            settings = settings,
+            plan = plan,
+            slot = slot,
+            stepsInSlot = inSlot,
+            todayTotal = total,
+            alreadyCelebratedThisSlot = prefs.getString(KEY_LAST_SLOT, null) == slotKey,
+            alreadyCelebratedToday = prefs.getString(KEY_LAST_DAY, null) == date.toString(),
+        )
+        if (hadNewSteps && left != null && left <= CelebrationDecider.CLOSE_STEPS) {
+            Log.i(TAG, "$left steps from a goal; asking for steps again soon")
+            reminderScheduler.scheduleStepCheck()
+        }
     }
 
     suspend fun celebrate(celebration: Celebration) {
@@ -114,11 +137,15 @@ class CelebrationManager(
         reminderNotifier.syncChannels(strength)
         val pattern = Haptics.celebrationPattern(strength)
 
+        val inBackground = !isUiVisible()
         // A notification would not alert while the app is in the foreground on Wear OS anyway.
-        val canOpen = isUiVisible() || canOpenFromBackground()
+        val canOpen = !inBackground || canOpenFromBackground()
         // Wear OS ignores full-screen intents in always-on mode, so light the screen first.
         if (Attention.wakeScreenIfAsleep(context)) delay(Attention.WAKE_SETTLE_MS)
-        if (canOpen && openScreen(celebration, pattern)) return
+        if (canOpen && openScreen(celebration, pattern)) {
+            if (inBackground) postRecord(celebration)
+            return
+        }
         postNotification(celebration, strength)
         Haptics.vibrate(context, pattern)
     }
@@ -152,12 +179,35 @@ class CelebrationManager(
     }
 
     private fun postNotification(celebration: Celebration, strength: VibrationStrength) {
-        val activityIntent = PendingIntent.getActivity(
+        val builder = builder(celebration, ReminderNotifier.channelId(ReminderNotifier.CHANNEL_CELEBRATION, strength))
+            .setCategory(NotificationCompat.CATEGORY_EVENT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setTimeoutAfter(NOTIFICATION_TIMEOUT_MS)
+        if (canUseFullScreenIntent()) {
+            builder.setFullScreenIntent(activityIntent(celebration), true)
+        }
+        notificationManager.notify(NOTIFICATION_ID, builder.build())
+    }
+
+    /** No pop-up and no buzz: just something to find if the screen went unseen. */
+    private fun postRecord(celebration: Celebration) {
+        val builder = builder(celebration, ReminderNotifier.CHANNEL_CELEBRATION_RECORD)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setSilent(true)
+            .setTimeoutAfter(RECORD_TIMEOUT_MS)
+        notificationManager.notify(RECORD_NOTIFICATION_ID, builder.build())
+    }
+
+    private fun activityIntent(celebration: Celebration): PendingIntent =
+        PendingIntent.getActivity(
             context,
             REQUEST_CODE,
             CelebrationActivity.intent(context, celebration),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+
+    private fun builder(celebration: Celebration, channelId: String): NotificationCompat.Builder {
         val title = when (celebration.kind) {
             CelebrationKind.SLOT_GOAL -> context.getString(R.string.celebration_slot_title, SlotWording.goalName(celebration.slotMinutes))
             CelebrationKind.INACTIVITY_GOAL -> context.getString(R.string.celebration_inactivity_title)
@@ -171,27 +221,22 @@ class CelebrationManager(
         } else {
             context.getString(R.string.celebration_steps_in_slot, formatSteps(celebration.stepsInSlot), SlotWording.current(celebration.slotMinutes))
         }
-        val builder = NotificationCompat.Builder(context, ReminderNotifier.channelId(ReminderNotifier.CHANNEL_CELEBRATION, strength))
+        return NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(text)
-            .setCategory(NotificationCompat.CATEGORY_EVENT)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-            .setTimeoutAfter(NOTIFICATION_TIMEOUT_MS)
-            .setContentIntent(activityIntent)
-        if (canUseFullScreenIntent()) {
-            builder.setFullScreenIntent(activityIntent, true)
-        }
-        notificationManager.notify(NOTIFICATION_ID, builder.build())
+            .setContentIntent(activityIntent(celebration))
     }
 
     companion object {
         const val NOTIFICATION_ID = 1002
+        private const val RECORD_NOTIFICATION_ID = 1003
         private const val REQUEST_CODE = 2
         private const val KEY_LAST_SLOT = "last_celebrated_slot"
         private const val KEY_LAST_DAY = "last_celebrated_day"
         private const val NOTIFICATION_TIMEOUT_MS = 10 * 60 * 1000L
+        private const val RECORD_TIMEOUT_MS = 60 * 60 * 1000L
         private const val OPEN_WAIT_MS = 1_500L
     }
 }

@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "ReminderReceiver"
 
-/** Alarms for slot checks and follow-ups, and the buttons on a reminder notification. */
+/** Alarms for slot checks, follow-ups and step checks, and the buttons on a reminder notification. */
 class ReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -53,6 +53,8 @@ class ReminderReceiver : BroadcastReceiver() {
             }
             ACTION_SNOOZE -> container.reminderCheck.snooze()
             ACTION_PAUSE_TODAY -> container.pauseToday()
+            // New steps come back through the passive listener, which decides whether to look again.
+            ACTION_CHECK_STEPS -> container.stepsRepository.flush()
         }
     }
 
@@ -61,9 +63,10 @@ class ReminderReceiver : BroadcastReceiver() {
         const val ACTION_FOLLOW_UP = "com.hourlysteps.action.FOLLOW_UP"
         const val ACTION_SNOOZE = "com.hourlysteps.action.SNOOZE"
         const val ACTION_PAUSE_TODAY = "com.hourlysteps.action.PAUSE_TODAY"
+        const val ACTION_CHECK_STEPS = "com.hourlysteps.action.CHECK_STEPS"
         const val EXTRA_SCHEDULED_AT = "scheduled_at"
         const val EXTRA_FOLLOW_UP_KIND = "follow_up_kind"
-        private val HANDLED_ACTIONS = setOf(ACTION_CHECK, ACTION_FOLLOW_UP, ACTION_SNOOZE, ACTION_PAUSE_TODAY)
+        private val HANDLED_ACTIONS = setOf(ACTION_CHECK, ACTION_FOLLOW_UP, ACTION_SNOOZE, ACTION_PAUSE_TODAY, ACTION_CHECK_STEPS)
         private const val WAKE_LOCK_TIMEOUT_MS = 30_000L
     }
 }

@@ -9,6 +9,8 @@
 
     <string name="channel_celebration_name">Goal celebrations</string>
     <string name="channel_celebration_description">Celebrates when you reach an interval\'s step goal, or today\'s.</string>
+    <string name="channel_record_name">Goals reached</string>
+    <string name="channel_record_description">A quiet note of the last goal you reached, left after its celebration closes.</string>
     <string name="celebration_slot_title">🎉 %1$s achieved!</string>
     <string name="celebration_inactivity_title">🎉 Still moving, nice work!</string>
     <string name="celebration_steps_in_slot">%1$s steps %2$s</string>

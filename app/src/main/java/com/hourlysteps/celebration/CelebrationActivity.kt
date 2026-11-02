@@ -56,8 +56,7 @@ class CelebrationActivity : ComponentActivity() {
         getSystemService(NotificationManager::class.java).cancel(CelebrationManager.NOTIFICATION_ID)
         val container = (application as HourlyStepsApp).container
         container.celebrationManager.onScreenOpened()
-        // Android drops a vibration asked for from the background, so the open screen plays it.
-        if (savedInstanceState == null) Haptics.vibrate(this, intent.getLongArrayExtra(EXTRA_VIBRATION))
+        val vibration = if (savedInstanceState == null) intent.getLongArrayExtra(EXTRA_VIBRATION) else null
 
         val celebration = celebrationFrom(intent)
         val reduceMotion = AndroidSettings.Global.getFloat(
@@ -67,6 +66,12 @@ class CelebrationActivity : ComponentActivity() {
         ) == 0f
 
         setContent {
+            // Android drops a vibration asked for from the background, so the open screen plays it.
+            // The app still counts as in the background for a moment after the screen opens.
+            LaunchedEffect(Unit) {
+                delay(VIBRATE_AFTER_MS)
+                Haptics.vibrate(this@CelebrationActivity, vibration, fullStrength = true)
+            }
             HourlyStepsTheme(container) {
                 CelebrationScreen(celebration, reduceMotion, onDone = ::finish)
             }
@@ -109,6 +114,7 @@ class CelebrationActivity : ComponentActivity() {
 }
 
 private const val SHOW_FOR_MS = 5_000L
+private const val VIBRATE_AFTER_MS = 400L
 
 @Composable
 fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: () -> Unit) {

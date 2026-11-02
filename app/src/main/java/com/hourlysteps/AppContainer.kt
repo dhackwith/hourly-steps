@@ -91,6 +91,7 @@ class AppContainer(private val context: Context) {
 
     val celebrationManager = CelebrationManager(
         context = context,
+        reminderScheduler = reminderScheduler,
         settingsRepository = settingsRepository,
         stepsRepository = stepsRepository,
         activityStore = activityStore,

@@ -46,11 +46,17 @@ class ReminderNotifier(
      * pattern cannot change after creation, so the strength is part of the channel's id.
      */
     fun syncChannels(strength: VibrationStrength) {
-        val wanted = listOf(
+        val alerting = listOf(
             channel(CHANNEL_GOAL, strength, Haptics.reminderPattern(strength), R.string.channel_goal_name, R.string.channel_goal_description),
             channel(CHANNEL_INACTIVITY, strength, Haptics.reminderPattern(strength), R.string.channel_inactivity_name, R.string.channel_inactivity_description),
             channel(CHANNEL_CELEBRATION, strength, Haptics.celebrationPattern(strength), R.string.channel_celebration_name, R.string.channel_celebration_description),
         )
+        val record = NotificationChannel(CHANNEL_CELEBRATION_RECORD, context.getString(R.string.channel_record_name), NotificationManager.IMPORTANCE_LOW).apply {
+            description = context.getString(R.string.channel_record_description)
+            enableVibration(false)
+            setSound(null, null)
+        }
+        val wanted = alerting + record
         val wantedIds = wanted.map { it.id }.toSet()
         notificationManager.notificationChannels
             .filter { it.id !in wantedIds }
@@ -187,7 +193,9 @@ class ReminderNotifier(
     companion object {
         const val CHANNEL_GOAL = "goal_reminders"
         const val CHANNEL_INACTIVITY = "inactivity_reminders"
-        const val CHANNEL_CELEBRATION = "goal_celebrations"
+        /** Versioned because a channel's vibration can't change once it exists. */
+        const val CHANNEL_CELEBRATION = "goal_celebrations_v2"
+        const val CHANNEL_CELEBRATION_RECORD = "goal_record"
         const val NOTIFICATION_ID = 1001
 
         fun channelId(base: String, strength: VibrationStrength): String = "${base}_${strength.name.lowercase()}"

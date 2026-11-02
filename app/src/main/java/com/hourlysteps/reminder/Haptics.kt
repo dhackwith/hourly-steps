@@ -17,19 +17,23 @@ object Haptics {
         VibrationStrength.LONG -> longArrayOf(0, 400, 150, 400, 150, 400)
     }
 
-    /** Quick "da-da-daaa" flourish: "goal reached". */
+    /** "Da-da-daaa" twice: "goal reached". Long enough to notice while walking with an arm down. */
     fun celebrationPattern(strength: VibrationStrength): LongArray? = when (strength) {
         VibrationStrength.OFF -> null
-        VibrationStrength.SHORT -> longArrayOf(0, 60, 70, 60, 70, 260)
-        VibrationStrength.LONG -> longArrayOf(0, 80, 80, 80, 80, 80, 80, 450)
+        VibrationStrength.SHORT -> longArrayOf(0, 120, 80, 120, 80, 500, 300, 120, 80, 120, 80, 500)
+        VibrationStrength.LONG -> longArrayOf(0, 150, 100, 150, 100, 800, 300, 150, 100, 150, 100, 800)
     }
+
+    /** The strongest setting for each buzz in [pattern], whose entries alternate gap and buzz. */
+    fun fullAmplitudes(pattern: LongArray): IntArray =
+        IntArray(pattern.size) { if (it % 2 == 0) 0 else 255 }
 
     /**
      * Plays [pattern] unless Do Not Disturb is on. This only has an effect while the app is on
      * screen, where a notification doesn't alert; in the background Android drops the request,
      * and the notification channel's own pattern is what the wearer feels.
      */
-    fun vibrate(context: Context, pattern: LongArray?) {
+    fun vibrate(context: Context, pattern: LongArray?, fullStrength: Boolean = false) {
         if (pattern == null || !Attention.interruptionsAllowed(context)) return
         val vibrator: Vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             context.getSystemService(VibratorManager::class.java).defaultVibrator
@@ -37,6 +41,11 @@ object Haptics {
             @Suppress("DEPRECATION")
             context.getSystemService(Vibrator::class.java)
         }
-        vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+        val effect = if (fullStrength && vibrator.hasAmplitudeControl()) {
+            VibrationEffect.createWaveform(pattern, fullAmplitudes(pattern), -1)
+        } else {
+            VibrationEffect.createWaveform(pattern, -1)
+        }
+        vibrator.vibrate(effect)
     }
 }

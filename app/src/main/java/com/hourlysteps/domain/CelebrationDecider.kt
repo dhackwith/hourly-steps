@@ -44,14 +44,7 @@ object CelebrationDecider {
     ): Celebration? {
         if (!settings.celebrate || alreadyCelebratedThisSlot) return null
 
-        val totalAtSlotStart = todayTotal - stepsInSlot
-        val (kind, target) = when {
-            totalAtSlotStart < plan.dailyGoal ->
-                CelebrationKind.SLOT_GOAL to GoalCalculator.slotGoalFromRemaining(plan.dailyGoal, slot, totalAtSlotStart)
-            settings.inactivityEnabled ->
-                CelebrationKind.INACTIVITY_GOAL to GoalCalculator.inactivityGoal(settings.inactivityThreshold, slot.lengthMinutes)
-            else -> return null
-        }
+        val (kind, target) = slotTarget(settings, plan, slot, stepsInSlot, todayTotal) ?: return null
         if (stepsInSlot < target) return null
         return Celebration(kind, stepsInSlot, target, todayTotal, plan.dailyGoal, slotMinutes = slot.lengthMinutes)
     }
@@ -67,4 +60,38 @@ object CelebrationDecider {
         if (!settings.celebrateDaily || alreadyCelebratedToday || todayTotal < plan.dailyGoal) return null
         return Celebration(CelebrationKind.DAILY_GOAL, stepsInSlot, plan.dailyGoal, todayTotal, plan.dailyGoal)
     }
+
+    /** Steps until the next celebration, or null when none is still to come. */
+    fun stepsToNext(
+        settings: Settings,
+        plan: DayPlan,
+        slot: Slot?,
+        stepsInSlot: Int,
+        todayTotal: Int,
+        alreadyCelebratedThisSlot: Boolean,
+        alreadyCelebratedToday: Boolean,
+    ): Int? {
+        val toSlot = slot?.takeIf { settings.celebrate && !alreadyCelebratedThisSlot }
+            ?.let { slotTarget(settings, plan, it, stepsInSlot, todayTotal) }
+            ?.let { (_, target) -> target - stepsInSlot }
+        val toDay = (plan.dailyGoal - todayTotal).takeIf { settings.celebrateDaily && !alreadyCelebratedToday }
+        return listOfNotNull(toSlot, toDay).filter { it > 0 }.minOrNull()
+    }
+
+    private fun slotTarget(settings: Settings, plan: DayPlan, slot: Slot, stepsInSlot: Int, todayTotal: Int): Pair<CelebrationKind, Int>? {
+        val totalAtSlotStart = todayTotal - stepsInSlot
+        return when {
+            totalAtSlotStart < plan.dailyGoal ->
+                CelebrationKind.SLOT_GOAL to GoalCalculator.slotGoalFromRemaining(plan.dailyGoal, slot, totalAtSlotStart)
+            settings.inactivityEnabled ->
+                CelebrationKind.INACTIVITY_GOAL to GoalCalculator.inactivityGoal(settings.inactivityThreshold, slot.lengthMinutes)
+            else -> null
+        }
+    }
+
+    /**
+     * Within this many steps of a goal, it's worth asking for steps rather than waiting for the
+     * watch's next batch. Batches can be 6 minutes apart, which is about this far at a walk.
+     */
+    const val CLOSE_STEPS = 400
 }
