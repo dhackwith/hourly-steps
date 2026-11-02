@@ -38,7 +38,7 @@ import com.hourlysteps.surfaces.ringContent
 
 private const val PAGE_COUNT = 3
 
-/** Swipeable pages: the rings, today hour by hour, then the streak. */
+/** Swipeable pages: the rings, today slot by slot, then the streak. */
 @Composable
 fun HomeScreen(viewModel: HomeViewModel, onOpenSettings: () -> Unit) {
     val status by viewModel.status.collectAsStateWithLifecycle()

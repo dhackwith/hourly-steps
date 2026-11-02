@@ -58,7 +58,7 @@ class HourlyStepsTileService : TileService() {
             Resources.Builder().setVersion(RESOURCES_VERSION).build()
         }
 
-    /** Refresh when the slot rolls over, so a still wearer doesn't see last hour's count. */
+    /** Refresh when the slot rolls over, so a still wearer doesn't see the last slot's count. */
     private fun freshnessMillis(status: DayStatus): Long {
         val now = ZonedDateTime.now(container.clock)
         val untilSlotEnd = status.slot?.let { Duration.between(now, it.endAt(now.zone)).toMillis() } ?: MAX_FRESHNESS_MS

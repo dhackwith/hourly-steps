@@ -2,9 +2,12 @@ package com.hourlysteps.ui
 
 import com.hourlysteps.domain.DayAssignment
 import com.hourlysteps.domain.DayPlan
+import com.hourlysteps.domain.GoalCalculator
 import com.hourlysteps.domain.Schedule
 import com.hourlysteps.domain.ScheduleMode
 import com.hourlysteps.domain.Settings
+import com.hourlysteps.domain.SlotWording
+import com.hourlysteps.domain.Slots
 import java.text.NumberFormat
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -21,14 +24,36 @@ private val timeFormat: DateTimeFormatter = DateTimeFormatter.ofLocalizedTime(Fo
 
 fun formatSteps(value: Int): String = numberFormat.format(value)
 
-/** "8:50 AM" style label for the :50 check of [hour]. */
-fun formatSlot(hour: Int): String = LocalTime.of(hour, 50).format(timeFormat)
-
 fun formatTime(time: LocalTime): String = time.format(timeFormat)
 
+/** When the plan's first check falls: "8:50 AM" with hourly reminders. */
+fun formatFirstCheck(plan: DayPlan, slotMinutes: Int): String = formatMinute(Slots.checkMinutes(plan, slotMinutes).first())
+
+/** When the plan's last check falls: "7:50 PM" with hourly reminders. */
+fun formatLastCheck(plan: DayPlan, slotMinutes: Int): String = formatMinute(Slots.checkMinutes(plan, slotMinutes).last())
+
+private fun formatMinute(minute: Int): String = formatTime(LocalTime.of(minute / 60, minute % 60))
+
 /** "7,000 · 8:50 AM–7:50 PM" */
-fun formatPlan(plan: DayPlan): String =
-    "${formatSteps(plan.dailyGoal)} · ${formatSlot(plan.firstHour)}–${formatSlot(plan.lastHour)}"
+fun formatPlan(plan: DayPlan, slotMinutes: Int): String =
+    "${formatSteps(plan.dailyGoal)} · ${formatFirstCheck(plan, slotMinutes)}–${formatLastCheck(plan, slotMinutes)}"
+
+/** "24 reminders · ≈ 292 steps per 30 min" */
+fun formatPlanCaption(plan: DayPlan, slotMinutes: Int): String =
+    "${formatReminderCount(plan, slotMinutes)} · ≈ ${formatSteps(GoalCalculator.slotGoal(plan, slotMinutes))} steps ${SlotWording.perSlot(slotMinutes)}"
+
+/** "24 reminders · ≈ 292/30 min", for the narrower picker screens. */
+fun formatPickerCaption(plan: DayPlan, slotMinutes: Int): String =
+    "${formatReminderCount(plan, slotMinutes)} · ${formatSlotGoal(plan, slotMinutes)}"
+
+/** "≈ 292/30 min" */
+fun formatSlotGoal(plan: DayPlan, slotMinutes: Int): String =
+    "≈ ${formatSteps(GoalCalculator.slotGoal(plan, slotMinutes))}${SlotWording.perSlotShort(slotMinutes)}"
+
+private fun formatReminderCount(plan: DayPlan, slotMinutes: Int): String {
+    val count = GoalCalculator.slotCount(plan, slotMinutes)
+    return if (count == 1) "1 reminder" else "$count reminders"
+}
 
 /** The time alone today, or with the weekday when it is on another day: "Mon 8:50 AM". */
 fun formatNextCheck(next: ZonedDateTime, today: LocalDate, locale: Locale = Locale.getDefault()): String {

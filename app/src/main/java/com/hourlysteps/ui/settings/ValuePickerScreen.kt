@@ -21,10 +21,12 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.rememberPickerState
 import com.hourlysteps.AppContainer
 import com.hourlysteps.domain.DayPlan
-import com.hourlysteps.domain.GoalCalculator
 import com.hourlysteps.domain.PlanId
 import com.hourlysteps.domain.Settings
-import com.hourlysteps.ui.formatSlot
+import com.hourlysteps.ui.formatFirstCheck
+import com.hourlysteps.ui.formatLastCheck
+import com.hourlysteps.ui.formatPickerCaption
+import com.hourlysteps.ui.formatSlotGoal
 import com.hourlysteps.ui.formatSteps
 import kotlinx.coroutines.launch
 
@@ -34,7 +36,7 @@ enum class PickerTarget { DAILY_GOAL, FIRST_HOUR, LAST_HOUR, INACTIVITY_THRESHOL
 private data class PickerSpec(
     val title: String,
     val values: List<Int>,
-    val label: (Int) -> String,
+    val label: (Settings, Int) -> String,
     val current: (Settings) -> Int,
     val apply: (Settings, Int) -> Settings,
     val caption: (Settings, Int) -> String? = { _, _ -> null },
@@ -49,12 +51,12 @@ private fun specFor(target: PickerTarget, planId: PlanId): PickerSpec = when (ta
         PickerSpec(
             title = "Daily goal",
             values = (Settings.MIN_DAILY_GOAL..Settings.MAX_DAILY_GOAL step Settings.DAILY_GOAL_STEP).toList(),
-            label = ::formatSteps,
+            label = { _, v -> formatSteps(v) },
             current = { it.schedule.plan(planId).dailyGoal },
             apply = edit,
             caption = { s, v ->
                 val edited = edit(s, v).schedule
-                "≈ ${formatSteps(GoalCalculator.slotGoal(edited.plan(planId), edited.slotMinutes))}/hour"
+                formatSlotGoal(edited.plan(planId), edited.slotMinutes)
             },
         )
     }
@@ -64,7 +66,7 @@ private fun specFor(target: PickerTarget, planId: PlanId): PickerSpec = when (ta
         PickerSpec(
             title = "First reminder",
             values = (0..23).toList(),
-            label = ::formatSlot,
+            label = { s, v -> formatFirstCheck(edit(s, v).schedule.plan(planId), s.schedule.slotMinutes) },
             current = { it.schedule.plan(planId).firstHour },
             apply = edit,
             caption = { s, v -> slotsCaption(edit(s, v), planId) },
@@ -75,7 +77,7 @@ private fun specFor(target: PickerTarget, planId: PlanId): PickerSpec = when (ta
         PickerSpec(
             title = "Last reminder",
             values = (0..23).toList(),
-            label = ::formatSlot,
+            label = { s, v -> formatLastCheck(edit(s, v).schedule.plan(planId), s.schedule.slotMinutes) },
             current = { it.schedule.plan(planId).lastHour },
             apply = edit,
             caption = { s, v -> slotsCaption(edit(s, v), planId) },
@@ -84,7 +86,7 @@ private fun specFor(target: PickerTarget, planId: PlanId): PickerSpec = when (ta
     PickerTarget.INACTIVITY_THRESHOLD -> PickerSpec(
         title = "Inactivity goal",
         values = (Settings.MIN_INACTIVITY_THRESHOLD..Settings.MAX_INACTIVITY_THRESHOLD step Settings.INACTIVITY_THRESHOLD_STEP).toList(),
-        label = { formatSteps(it) },
+        label = { _, v -> formatSteps(v) },
         current = { it.inactivityThreshold },
         apply = { s, v -> s.copy(inactivityThreshold = v) },
         caption = { _, _ -> "steps per hour" },
@@ -92,9 +94,7 @@ private fun specFor(target: PickerTarget, planId: PlanId): PickerSpec = when (ta
 }
 
 private fun slotsCaption(s: Settings, planId: PlanId): String {
-    val plan = s.schedule.plan(planId)
-    val slotMinutes = s.schedule.slotMinutes
-    return "${GoalCalculator.slotCount(plan, slotMinutes)} reminders · ≈ ${formatSteps(GoalCalculator.slotGoal(plan, slotMinutes))}/hour"
+    return formatPickerCaption(s.schedule.plan(planId), s.schedule.slotMinutes)
 }
 
 @Composable
@@ -122,10 +122,10 @@ fun ValuePickerScreen(container: AppContainer, target: PickerTarget, planId: Pla
             Text(spec.title, style = MaterialTheme.typography.titleSmall)
             Picker(
                 state = state,
-                contentDescription = { spec.label(selected) },
+                contentDescription = { spec.label(loaded, selected) },
                 modifier = Modifier.fillMaxWidth().height(110.dp),
             ) { index ->
-                Text(spec.label(spec.values[index]), style = MaterialTheme.typography.displaySmall)
+                Text(spec.label(loaded, spec.values[index]), style = MaterialTheme.typography.displaySmall)
             }
             spec.caption(loaded, selected)?.let {
                 Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -11,8 +11,10 @@ import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.data.steps.StepsRepository
 import com.hourlysteps.domain.CheckDecider
 import com.hourlysteps.domain.CheckResult
+import com.hourlysteps.domain.ReminderSchedule
 import com.hourlysteps.domain.Settings
 import com.hourlysteps.domain.Slot
+import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.domain.Slots
 import com.hourlysteps.domain.VibrationStrength
 import com.hourlysteps.ui.MainActivity
@@ -61,16 +63,17 @@ class ReminderNotifier(
 
     suspend fun show(result: CheckResult, settings: Settings, slot: Slot?, now: ZonedDateTime) {
         syncChannels(settings.vibration)
+        val slotMinutes = slot?.lengthMinutes ?: settings.schedule.slotMinutes
         val (baseChannel, text, subText) = when (result) {
             CheckResult.None -> return
             is CheckResult.GoalShortfall -> Triple(
                 CHANNEL_GOAL,
-                moreStepsText(result.need),
-                result.catchUpPerSlot?.let { context.getString(R.string.notif_catch_up, formatSteps(it)) },
+                moreStepsText(result.need, slotMinutes),
+                result.catchUpPerSlot?.let { context.getString(R.string.notif_catch_up, formatSteps(it), SlotWording.perSlotShort(slotMinutes)) },
             )
             is CheckResult.InactivityShortfall -> Triple(
                 CHANNEL_INACTIVITY,
-                moreStepsText(result.need),
+                moreStepsText(result.need, slotMinutes),
                 null,
             )
         }
@@ -95,8 +98,11 @@ class ReminderNotifier(
             .setAutoCancel(true)
             .setTimeoutAfter(timeout)
             .setContentIntent(contentIntent)
-            .addAction(R.drawable.ic_action_snooze, context.getString(R.string.notif_action_snooze), actionIntent(ReminderReceiver.ACTION_SNOOZE, 10))
-            .addAction(R.drawable.ic_action_pause, context.getString(R.string.notif_action_pause_today), actionIntent(ReminderReceiver.ACTION_PAUSE_TODAY, 11))
+        // A half hour's check leaves too little time for a snoozed reminder to come back.
+        if (slot != null && ReminderSchedule.snoozeUntil(slot, now) != null) {
+            builder.addAction(R.drawable.ic_action_snooze, context.getString(R.string.notif_action_snooze), actionIntent(ReminderReceiver.ACTION_SNOOZE, 10))
+        }
+        builder.addAction(R.drawable.ic_action_pause, context.getString(R.string.notif_action_pause_today), actionIntent(ReminderReceiver.ACTION_PAUSE_TODAY, 11))
         if (subText != null) {
             builder.setStyle(NotificationCompat.BigTextStyle().bigText("$text\n$subText"))
         }
@@ -114,8 +120,8 @@ class ReminderNotifier(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-    private fun moreStepsText(need: Int): String =
-        context.resources.getQuantityString(R.plurals.notif_more_steps, need, formatSteps(need))
+    private fun moreStepsText(need: Int, slotMinutes: Int): String =
+        context.resources.getQuantityString(R.plurals.notif_more_steps, need, formatSteps(need), SlotWording.current(slotMinutes))
 
     fun cancel() {
         notificationManager.cancel(NOTIFICATION_ID)

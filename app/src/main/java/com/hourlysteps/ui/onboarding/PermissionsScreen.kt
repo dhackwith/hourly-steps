@@ -53,7 +53,7 @@ fun PermissionsScreen(container: AppContainer, onDone: () -> Unit) {
             item { ListHeader { Text("Permissions") } }
             item {
                 Text(
-                    "Hourly Steps reads your steps and reminds you at :50 when you're short.",
+                    "Hourly Steps reads your steps and reminds you when you're short of your goal.",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -96,7 +96,7 @@ fun PermissionsScreen(container: AppContainer, onDone: () -> Unit) {
                     enabled = !exactOk,
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("On-time reminders") },
-                    secondaryLabel = { Text(if (exactOk) "Granted" else "Optional: exact :50 timing") },
+                    secondaryLabel = { Text(if (exactOk) "Granted" else "Optional: exact timing") },
                 )
             }
             if (!fullScreenOk && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {

@@ -19,12 +19,13 @@ import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
 import com.hourlysteps.AppContainer
 import com.hourlysteps.domain.DayAssignment
-import com.hourlysteps.domain.GoalCalculator
 import com.hourlysteps.domain.PlanId
 import com.hourlysteps.domain.ScheduleMode
 import com.hourlysteps.domain.Settings
 import com.hourlysteps.ui.formatPauseEnd
-import com.hourlysteps.ui.formatSlot
+import com.hourlysteps.ui.formatFirstCheck
+import com.hourlysteps.ui.formatLastCheck
+import com.hourlysteps.ui.formatPlanCaption
 import com.hourlysteps.ui.formatSteps
 import com.hourlysteps.ui.formatWeek
 import com.hourlysteps.ui.fullDayName
@@ -32,7 +33,7 @@ import com.hourlysteps.ui.orderedWeek
 import java.time.ZonedDateTime
 import kotlinx.coroutines.launch
 
-/** One plan's goal and reminder window, with the resulting steps per hour. */
+/** One plan's goal and reminder window, with the resulting steps per reminder. */
 @Composable
 fun PlanEditorScreen(
     container: AppContainer,
@@ -43,6 +44,7 @@ fun PlanEditorScreen(
     val loaded = settings ?: return
     val plan = loaded.schedule.plan(planId)
     val twoPlans = loaded.schedule.mode == ScheduleMode.TWO_PLANS
+    val slotMinutes = loaded.schedule.slotMinutes
     val listState = rememberScalingLazyListState()
 
     ScreenScaffold(scrollState = listState) { padding ->
@@ -71,7 +73,7 @@ fun PlanEditorScreen(
                     onClick = { onPick(PickerTarget.FIRST_HOUR) },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("First reminder") },
-                    secondaryLabel = { Text(formatSlot(plan.firstHour)) },
+                    secondaryLabel = { Text(formatFirstCheck(plan, slotMinutes)) },
                 )
             }
             item {
@@ -79,13 +81,12 @@ fun PlanEditorScreen(
                     onClick = { onPick(PickerTarget.LAST_HOUR) },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Last reminder") },
-                    secondaryLabel = { Text(formatSlot(plan.lastHour)) },
+                    secondaryLabel = { Text(formatLastCheck(plan, slotMinutes)) },
                 )
             }
             item {
-                val slotMinutes = loaded.schedule.slotMinutes
                 Text(
-                    "${GoalCalculator.slotCount(plan, slotMinutes)} reminders · ≈ ${formatSteps(GoalCalculator.slotGoal(plan, slotMinutes))} steps/hour",
+                    formatPlanCaption(plan, slotMinutes),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

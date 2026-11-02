@@ -8,6 +8,10 @@ object GoalCalculator {
     fun slotGoal(plan: DayPlan, slotMinutes: Int): Int =
         ceilDiv(plan.dailyGoal, slotCount(plan, slotMinutes).coerceAtLeast(1))
 
+    /** The inactivity threshold is a rate per hour, so a slot's share follows its length. */
+    fun inactivityGoal(stepsPerHour: Int, slotLengthMinutes: Int): Int =
+        ceilDiv(stepsPerHour * slotLengthMinutes, 60)
+
     /** Slots still open at [minuteOfDay], including the current one. Zero once the window is over. */
     fun remainingSlots(plan: DayPlan, slotMinutes: Int, minuteOfDay: Int): Int =
         Slots.boundaries(plan, slotMinutes).count { (_, end) -> end > minuteOfDay }

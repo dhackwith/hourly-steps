@@ -94,7 +94,7 @@ Goal & schedule
   Plan A ................ 7,000 · 8:50 AM–7:50 PM    (opens plan editor; the only plan in Every day mode)
   Plan B ................ 5,000 · 9:50 AM–5:50 PM    (opens plan editor; Two plans mode only)
   Week .................. A A A A A B Off            (opens the week editor)
-  Reminder interval ..... Every hour                 (Phase E; hidden until then)
+  Reminder interval ..... Every hour                 (Phase E)
 Reminders
   Pause reminders ....... Off / Paused until Mon
   Second nudge .......... Off                         (Phase C)
@@ -280,7 +280,7 @@ longest-streak bookkeeping.
 
 ---
 
-## Phase E — Reminder interval UI
+## Phase E — Reminder interval UI (done)
 
 ### 11. Custom reminder intervals
 
@@ -293,6 +293,17 @@ The model from Phase A already supports it; this phase exposes it.
 - Health Services batches steps up to a few minutes; the flush before each check already
   covers 30-minute slots, but verify on the emulator that a 30-minute slot's count is complete
   at `slotEnd − 5 min`.
+
+**Added while building it.**
+
+- The inactivity threshold stays a rate per hour, as asked for, so a slot's share follows its
+  length: 250 per hour asks for 125 in a half hour and 500 in two hours.
+- A check every 30 minutes lands 5 minutes before the end, so a 5-minute snooze could never come
+  back. The Snooze button is left off when it wouldn't fit.
+- First and last reminder show the real check times for the interval, rather than always :50.
+- A short last slot is worded by its own length ("this hour"), but keeps an equal share of the
+  daily goal, as the other slots do.
+- Changing the interval clears any reminder on screen and any armed follow-up.
 
 ---
 

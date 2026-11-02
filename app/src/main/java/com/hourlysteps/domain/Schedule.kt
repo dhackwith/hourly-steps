@@ -118,6 +118,10 @@ object Slots {
         return bounds.mapIndexed { index, (start, end) -> Slot(date, start, end, index, bounds.size) }
     }
 
+    /** When each check falls, in minutes of the day. */
+    fun checkMinutes(plan: DayPlan, slotMinutes: Int): List<Int> =
+        forDay(plan, slotMinutes, LocalDate.MIN).map { it.checkMinute }
+
     /** The slot containing [time], or null on a day off or outside the window. */
     fun at(schedule: Schedule, time: ZonedDateTime): Slot? {
         val date = time.toLocalDate()

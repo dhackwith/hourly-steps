@@ -22,6 +22,7 @@ import com.hourlysteps.domain.GoalCalculator
 import com.hourlysteps.domain.PlanId
 import com.hourlysteps.domain.ScheduleMode
 import com.hourlysteps.domain.Settings
+import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.domain.VibrationStrength
 import com.hourlysteps.ui.formatPauseEnd
 import com.hourlysteps.ui.formatPlan
@@ -88,7 +89,7 @@ fun SettingsScreen(
                     onClick = { onOpenPlan(PlanId.A) },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text(if (twoPlans) "Plan A" else "Daily plan") },
-                    secondaryLabel = { Text(formatPlan(schedule.planA)) },
+                    secondaryLabel = { Text(formatPlan(schedule.planA, schedule.slotMinutes)) },
                 )
             }
             if (twoPlans) {
@@ -97,7 +98,7 @@ fun SettingsScreen(
                         onClick = { onOpenPlan(PlanId.B) },
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text("Plan B") },
-                        secondaryLabel = { Text(formatPlan(schedule.planB)) },
+                        secondaryLabel = { Text(formatPlan(schedule.planB, schedule.slotMinutes)) },
                     )
                 }
             }
@@ -107,6 +108,18 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Week") },
                     secondaryLabel = { Text(formatWeek(schedule)) },
+                )
+            }
+            item {
+                FilledTonalButton(
+                    onClick = {
+                        val options = Settings.SLOT_MINUTE_OPTIONS
+                        val next = options[(options.indexOf(schedule.slotMinutes) + 1) % options.size]
+                        scope.launch { container.setSlotMinutes(next) }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Reminder interval") },
+                    secondaryLabel = { Text(SlotWording.interval(schedule.slotMinutes)) },
                 )
             }
 
@@ -190,8 +203,8 @@ fun SettingsScreen(
                     checked = settings.celebrate,
                     onCheckedChange = { checked -> update { it.copy(celebrate = checked) } },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Hourly goal") },
-                    secondaryLabel = { Text("Fireworks when you hit the hour") },
+                    label = { Text(SlotWording.goalName(schedule.slotMinutes)) },
+                    secondaryLabel = { Text("Fireworks when you reach it") },
                 )
             }
             item {
@@ -221,30 +234,18 @@ fun SettingsScreen(
                             scope.launch {
                                 container.celebrationManager.celebrate(
                                     Celebration(
-                                        kind = CelebrationKind.HOURLY_GOAL,
-                                        stepsThisHour = goal + 37,
+                                        kind = CelebrationKind.SLOT_GOAL,
+                                        stepsInSlot = goal + 37,
                                         target = goal,
                                         todayTotal = plan.dailyGoal / 2,
                                         dailyGoal = plan.dailyGoal,
+                                        slotMinutes = schedule.slotMinutes,
                                     ),
                                 )
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text("Show celebration") },
-                    )
-                }
-                item {
-                    // The real interval setting arrives in a later phase; screen text still says "hour".
-                    FilledTonalButton(
-                        onClick = {
-                            val options = Settings.SLOT_MINUTE_OPTIONS
-                            val next = options[(options.indexOf(schedule.slotMinutes) + 1) % options.size]
-                            update { it.copy(schedule = it.schedule.copy(slotMinutes = next)) }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Slot length") },
-                        secondaryLabel = { Text("${schedule.slotMinutes} min") },
                     )
                 }
             }

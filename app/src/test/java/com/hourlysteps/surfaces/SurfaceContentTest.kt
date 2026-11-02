@@ -180,4 +180,38 @@ class SurfaceContentTest {
         assertTrue(paused.max > 0f)
         assertTrue(paused.value <= paused.max)
     }
+
+
+    private fun withInterval(slotMinutes: Int, endMinute: Int = 20 * 60): Settings = settings.copy(
+        schedule = settings.schedule.copy(
+            planA = settings.schedule.planA.copy(endMinute = endMinute),
+            slotMinutes = slotMinutes,
+        ),
+    )
+
+    @Test
+    fun `the slot caption names the half hour`() {
+        val c = ringContent(status(total = 400, s = withInterval(30)))
+        assertEquals("of 292 this half hour", c.valueCaption)
+        assertEquals("330/30 min to catch up", c.catchUpLine)
+    }
+
+    @Test
+    fun `the slot caption names the two hours`() {
+        val c = ringContent(status(total = 400, s = withInterval(120)))
+        assertEquals("of 1,167 these two hours", c.valueCaption)
+        assertEquals("1,320/2 hr to catch up", c.catchUpLine)
+    }
+
+    @Test
+    fun `a short last slot says what it is`() {
+        val c = ringContent(status(hour = 18, s = withInterval(120, endMinute = 19 * 60)))
+        assertEquals("of 1,167 this hour", c.valueCaption)
+    }
+
+    @Test
+    fun `the slot complication names the interval`() {
+        assertEquals("292 of 292 this half hour", slotComplication(status(s = withInterval(30))).longText)
+        assertEquals("292 of 1,167 these two hours", slotComplication(status(s = withInterval(120))).longText)
+    }
 }

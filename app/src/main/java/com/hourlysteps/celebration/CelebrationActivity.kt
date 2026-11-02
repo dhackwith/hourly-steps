@@ -32,6 +32,8 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.hourlysteps.domain.Celebration
 import com.hourlysteps.domain.CelebrationKind
+import com.hourlysteps.domain.Settings
+import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.domain.Streaks
 import com.hourlysteps.surfaces.RingColors
 import com.hourlysteps.ui.formatSteps
@@ -71,25 +73,28 @@ class CelebrationActivity : ComponentActivity() {
         private const val EXTRA_TOTAL = "total"
         private const val EXTRA_DAILY_GOAL = "daily_goal"
         private const val EXTRA_STREAK = "streak"
+        private const val EXTRA_SLOT_MINUTES = "slot_minutes"
 
         fun intent(context: Context, c: Celebration): Intent =
             Intent(context, CelebrationActivity::class.java)
                 .putExtra(EXTRA_KIND, c.kind.name)
-                .putExtra(EXTRA_STEPS, c.stepsThisHour)
+                .putExtra(EXTRA_STEPS, c.stepsInSlot)
                 .putExtra(EXTRA_TARGET, c.target)
                 .putExtra(EXTRA_TOTAL, c.todayTotal)
                 .putExtra(EXTRA_DAILY_GOAL, c.dailyGoal)
                 .putExtra(EXTRA_STREAK, c.streak)
+                .putExtra(EXTRA_SLOT_MINUTES, c.slotMinutes)
 
         private fun celebrationFrom(intent: Intent) = Celebration(
             kind = intent.getStringExtra(EXTRA_KIND)
                 ?.let { runCatching { CelebrationKind.valueOf(it) }.getOrNull() }
-                ?: CelebrationKind.HOURLY_GOAL,
-            stepsThisHour = intent.getIntExtra(EXTRA_STEPS, 0),
+                ?: CelebrationKind.SLOT_GOAL,
+            stepsInSlot = intent.getIntExtra(EXTRA_STEPS, 0),
             target = intent.getIntExtra(EXTRA_TARGET, 0),
             todayTotal = intent.getIntExtra(EXTRA_TOTAL, 0),
             dailyGoal = intent.getIntExtra(EXTRA_DAILY_GOAL, 0),
             streak = intent.getIntExtra(EXTRA_STREAK, 0),
+            slotMinutes = intent.getIntExtra(EXTRA_SLOT_MINUTES, Settings.DEFAULT_SLOT_MINUTES),
         )
     }
 }
@@ -136,7 +141,7 @@ fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: (
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             val (headline1, headline2) = when (celebration.kind) {
-                CelebrationKind.HOURLY_GOAL -> "Hourly goal" to "achieved!"
+                CelebrationKind.SLOT_GOAL -> SlotWording.goalName(celebration.slotMinutes) to "achieved!"
                 CelebrationKind.INACTIVITY_GOAL -> "Still moving" to "nice work!"
                 CelebrationKind.DAILY_GOAL -> "Daily goal" to "achieved!"
             }
@@ -149,12 +154,12 @@ fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: (
                 textAlign = TextAlign.Center,
             )
             Text(
-                formatSteps(if (isDaily) celebration.todayTotal else celebration.stepsThisHour),
+                formatSteps(if (isDaily) celebration.todayTotal else celebration.stepsInSlot),
                 style = MaterialTheme.typography.displayMedium,
                 textAlign = TextAlign.Center,
             )
             Text(
-                if (isDaily) "steps today" else "steps this hour",
+                if (isDaily) "steps today" else "steps ${SlotWording.current(celebration.slotMinutes)}",
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.onSurfaceVariant,
             )

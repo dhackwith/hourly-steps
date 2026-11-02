@@ -17,6 +17,7 @@ import com.hourlysteps.data.steps.StreakRepository
 import com.hourlysteps.domain.Celebration
 import com.hourlysteps.domain.CelebrationDecider
 import com.hourlysteps.domain.CelebrationKind
+import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.domain.Slots
 import com.hourlysteps.domain.Streaks
 import com.hourlysteps.domain.UserActivity
@@ -32,7 +33,7 @@ import kotlinx.coroutines.delay
 private const val TAG = "CelebrationManager"
 
 /**
- * Detects the moment this hour's goal is reached and celebrates it once.
+ * Detects the moment a slot's goal or the daily goal is reached and celebrates it once.
  *
  * Reaching the screen from the background: when the app's UI is visible the celebration
  * activity is started directly. Otherwise a high-priority notification is posted with a
@@ -73,6 +74,7 @@ class CelebrationManager(
             CelebrationDecider.decide(
                 settings = settings,
                 plan = plan,
+                slotLengthMinutes = it.lengthMinutes,
                 stepsInSlot = inSlot,
                 todayTotal = total,
                 alreadyCelebratedThisSlot = prefs.getString(KEY_LAST_SLOT, null) == slotKey,
@@ -138,20 +140,18 @@ class CelebrationManager(
             CelebrationActivity.intent(context, celebration),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val title = context.getString(
-            when (celebration.kind) {
-                CelebrationKind.HOURLY_GOAL -> R.string.celebration_hourly_title
-                CelebrationKind.INACTIVITY_GOAL -> R.string.celebration_inactivity_title
-                CelebrationKind.DAILY_GOAL -> R.string.celebration_daily_title
-            },
-        )
+        val title = when (celebration.kind) {
+            CelebrationKind.SLOT_GOAL -> context.getString(R.string.celebration_slot_title, SlotWording.goalName(celebration.slotMinutes))
+            CelebrationKind.INACTIVITY_GOAL -> context.getString(R.string.celebration_inactivity_title)
+            CelebrationKind.DAILY_GOAL -> context.getString(R.string.celebration_daily_title)
+        }
         val text = if (celebration.kind == CelebrationKind.DAILY_GOAL) {
             listOfNotNull(
                 context.getString(R.string.celebration_steps_today, formatSteps(celebration.todayTotal)),
                 Streaks.line(celebration.streak),
             ).joinToString(" · ")
         } else {
-            context.getString(R.string.celebration_steps_this_hour, formatSteps(celebration.stepsThisHour))
+            context.getString(R.string.celebration_steps_in_slot, formatSteps(celebration.stepsInSlot), SlotWording.current(celebration.slotMinutes))
         }
         val builder = NotificationCompat.Builder(context, ReminderNotifier.channelId(ReminderNotifier.CHANNEL_CELEBRATION, strength))
             .setSmallIcon(R.drawable.ic_launcher_foreground)

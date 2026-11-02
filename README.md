@@ -1,12 +1,14 @@
 # Hourly Steps
 
-Standalone Wear OS app (Pixel Watch 4, Wear OS 6 / API 36) that reminds you at :50 of each hour
-when you are short of an hourly step goal derived from your daily goal.
+Standalone Wear OS app (Pixel Watch 4, Wear OS 6 / API 36) that reminds you near the end of each
+hour, at :50, when you are short of an hourly step goal derived from your daily goal. Prefer a
+different rhythm? Reminders can also come every 30 minutes or every 2 hours.
 
 - Default: 7,000 steps/day over 12 reminders (8:50 AM – 7:50 PM) = 584 steps/hour.
 - When behind pace, the reminder adds the catch-up rate: `312 more steps this hour (660/hr to catch up today)`.
 - Once the daily goal is met, goal reminders stop. Optional **Inactivity reminders** keep checking
-  against a smaller per-hour threshold (default 250).
+  against a smaller per-hour threshold (default 250). The threshold is a rate, so every 30 minutes
+  it asks for half as much and every 2 hours for twice as much.
 - Reaching this hour's goal is celebrated once per hour: a "da-da-daaa" buzz, then a
   "🎉 Hourly goal achieved!" alert that opens a fireworks screen. If the app is open, the
   fireworks show straight away. If the watch screen is asleep, it is lit briefly so the alert is
@@ -23,6 +25,11 @@ when you are short of an hourly step goal derived from your daily goal.
 - See your progress without opening the app: a **tile** with two rings (today outside, this hour
   inside), watch-face **complications** for this hour and for today, and a **Today** page (swipe
   left on Home) showing each hour's result and why a reminder did or didn't fire.
+- **Reminder interval** sets how often reminders come. The check lands a sixth of the way before
+  each period ends: :25 and :55 every 30 minutes (292 steps each), :50 every hour (584), and 20
+  minutes before each two-hour block ends (1,167). All the text follows: "this half hour", "this
+  hour", "these two hours". If your hours don't divide evenly into two-hour blocks, the last one is
+  a single hour with the same goal as the others.
 - Reminders stay out of the way: they skip during tracked workouts and sleep, have **Snooze 5 min**
   and **Pause today** buttons, and can optionally buzz once more near the end of the hour with
   **Second nudge**. A skipped reminder is explained on the Today page.
@@ -58,11 +65,10 @@ To exercise both sides of a check with constant walking, change the goal instead
 a high daily goal (for example 30,000) produces a shortfall reminder, a low one (1,000) puts the
 day in the goal-met state.
 
-Debug builds have **Run check now**, **Show celebration** and **Slot length** buttons at the bottom
-of Settings. Run check now runs the check immediately, ignoring the charging skip. Show celebration
-opens the fireworks screen. Slot length cycles 30, 60 and 120 minutes; screen text still says "this
-hour" until the real interval setting ships. To trigger a celebration from the background instead, for example with the
-watch on its face or asleep, debug builds also accept:
+Debug builds have **Run check now** and **Show celebration** buttons at the bottom of Settings. Run
+check now runs the check immediately, ignoring the charging skip. Show celebration opens the
+fireworks screen. To trigger a celebration from the background instead, for example with the watch
+on its face or asleep, debug builds also accept:
 
 ```bash
 adb shell am broadcast -a com.hourlysteps.debug.CELEBRATE -p com.hourlysteps
@@ -111,7 +117,8 @@ adb shell dumpsys battery reset
 
 Exact alarms are off by default on Wear OS. The app's "On-time reminders" button opens the
 system "Alarms and reminders" list, where you pick Hourly Steps and turn it on. Without it, checks
-run some time in the 10 minutes before :50.
+run some time in the 10 minutes before they are due. That matters most every 30 minutes, when a
+check could see as little as 15 minutes of walking.
 
 Checklist for reminder changes, because each of these behaves differently on Wear OS:
 
@@ -161,7 +168,7 @@ real watch, add the tile from the tile list and pick complications in the watch 
 
 | Package | Role |
 |---|---|
-| `domain` | Pure logic: schedule and slots, goal maths, catch-up pace, check decision, next-alarm time, day status, today summary. Fully unit-tested. |
+| `domain` | Pure logic: schedule and slots, goal maths, catch-up pace, check decision, next-alarm time, day status, today summary, wording for each interval. Fully unit-tested. |
 | `data` | Settings (DataStore), raw step points and check log (Room), Health Services passive listener. |
 | `reminder` | Exact-alarm chain, the slot check, notifications and vibration, reschedule on boot/time change. |
 | `celebration` | Goal celebration trigger, fireworks screen. |

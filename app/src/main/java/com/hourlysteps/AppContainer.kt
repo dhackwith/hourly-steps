@@ -125,6 +125,14 @@ class AppContainer(private val context: Context) {
         ensureArmed()
     }
 
+    /** Changes how often reminders come. A reminder or follow-up from the old interval no longer applies. */
+    suspend fun setSlotMinutes(minutes: Int) {
+        settingsRepository.update { it.copy(schedule = it.schedule.copy(slotMinutes = minutes)) }
+        reminderNotifier.cancel()
+        reminderScheduler.cancelFollowUp()
+        ensureArmed()
+    }
+
     /** The "Pause today" button on a reminder. */
     suspend fun pauseToday() = setPausedThrough(ZonedDateTime.now(clock).toLocalDate())
 }

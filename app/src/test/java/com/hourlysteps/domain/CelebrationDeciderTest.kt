@@ -10,12 +10,12 @@ class CelebrationDeciderTest {
     private val plan = defaults.schedule.planA
 
     private fun decide(s: Settings = defaults, steps: Int, total: Int, already: Boolean = false, p: DayPlan = plan) =
-        CelebrationDecider.decide(s, p, steps, total, already)
+        CelebrationDecider.decide(s, p, s.schedule.slotMinutes, steps, total, already)
 
     @Test
     fun `reaching the slot goal celebrates`() {
         assertEquals(
-            Celebration(CelebrationKind.HOURLY_GOAL, 584, 584, 2000, 7000),
+            Celebration(CelebrationKind.SLOT_GOAL, 584, 584, 2000, 7000),
             decide(steps = 584, total = 2000),
         )
     }
@@ -39,7 +39,7 @@ class CelebrationDeciderTest {
     fun `crossing the daily goal in the same batch still celebrates the slot`() {
         // 6,600 before this slot, 600 in it: the daily goal and the slot goal fall together.
         val c = decide(steps = 600, total = 7200)
-        assertEquals(CelebrationKind.HOURLY_GOAL, c?.kind)
+        assertEquals(CelebrationKind.SLOT_GOAL, c?.kind)
         assertEquals(584, c?.target)
     }
 
@@ -62,7 +62,7 @@ class CelebrationDeciderTest {
     fun `a lighter plan celebrates at its own goal`() {
         val lighter = DayPlan(dailyGoal = 3000, startMinute = 9 * 60, endMinute = 15 * 60) // 500 per slot
         assertEquals(
-            Celebration(CelebrationKind.HOURLY_GOAL, 500, 500, 500, 3000),
+            Celebration(CelebrationKind.SLOT_GOAL, 500, 500, 500, 3000),
             decide(steps = 500, total = 500, p = lighter),
         )
     }

@@ -73,7 +73,11 @@ data class DayStatus(
                 todayTotal = todayTotal,
                 dailyGoal = plan?.dailyGoal,
                 mode = mode,
-                slotTarget = if (mode == CheckMode.INACTIVITY) settings.inactivityThreshold else slotGoal,
+                slotTarget = if (mode == CheckMode.INACTIVITY) {
+                    GoalCalculator.inactivityGoal(settings.inactivityThreshold, slot?.lengthMinutes ?: slotMinutes)
+                } else {
+                    slotGoal
+                },
                 catchUpPerSlot = catchUp,
                 nextCheck = ReminderSchedule.nextCheckTime(now, settings),
                 pausedThrough = settings.pausedThrough,

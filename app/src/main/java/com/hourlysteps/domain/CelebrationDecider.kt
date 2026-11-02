@@ -2,7 +2,7 @@ package com.hourlysteps.domain
 
 enum class CelebrationKind {
     /** This slot's share of the daily goal was reached. */
-    HOURLY_GOAL,
+    SLOT_GOAL,
 
     /** Daily goal already met; this slot's inactivity threshold was reached. */
     INACTIVITY_GOAL,
@@ -13,12 +13,14 @@ enum class CelebrationKind {
 
 data class Celebration(
     val kind: CelebrationKind,
-    val stepsThisHour: Int,
+    val stepsInSlot: Int,
     val target: Int,
     val todayTotal: Int,
     val dailyGoal: Int,
     /** Days in a row including today; only set for the daily goal. */
     val streak: Int = 0,
+    /** Length of the slot being celebrated, for its wording. */
+    val slotMinutes: Int = Settings.DEFAULT_SLOT_MINUTES,
 )
 
 object CelebrationDecider {
@@ -35,6 +37,7 @@ object CelebrationDecider {
     fun decide(
         settings: Settings,
         plan: DayPlan,
+        slotLengthMinutes: Int,
         stepsInSlot: Int,
         todayTotal: Int,
         alreadyCelebratedThisSlot: Boolean,
@@ -44,13 +47,13 @@ object CelebrationDecider {
         val totalAtSlotStart = todayTotal - stepsInSlot
         val (kind, target) = when {
             totalAtSlotStart < plan.dailyGoal ->
-                CelebrationKind.HOURLY_GOAL to GoalCalculator.slotGoal(plan, settings.schedule.slotMinutes)
+                CelebrationKind.SLOT_GOAL to GoalCalculator.slotGoal(plan, settings.schedule.slotMinutes)
             settings.inactivityEnabled ->
-                CelebrationKind.INACTIVITY_GOAL to settings.inactivityThreshold
+                CelebrationKind.INACTIVITY_GOAL to GoalCalculator.inactivityGoal(settings.inactivityThreshold, slotLengthMinutes)
             else -> return null
         }
         if (stepsInSlot < target) return null
-        return Celebration(kind, stepsInSlot, target, todayTotal, plan.dailyGoal)
+        return Celebration(kind, stepsInSlot, target, todayTotal, plan.dailyGoal, slotMinutes = slotLengthMinutes)
     }
 
     /** Whether today's total has reached the daily goal and not yet been celebrated. */

@@ -28,14 +28,14 @@ class DebugCelebrateReceiver : BroadcastReceiver() {
                 val celebration = if (daily) {
                     Celebration(
                         kind = CelebrationKind.DAILY_GOAL,
-                        stepsThisHour = goal,
+                        stepsInSlot = goal,
                         target = plan.dailyGoal,
                         todayTotal = plan.dailyGoal + 40,
                         dailyGoal = plan.dailyGoal,
                         streak = container.streakRepository.current().current + 1,
                     )
                 } else {
-                    Celebration(CelebrationKind.HOURLY_GOAL, goal + 23, goal, plan.dailyGoal / 2, plan.dailyGoal)
+                    Celebration(CelebrationKind.SLOT_GOAL, goal + 23, goal, plan.dailyGoal / 2, plan.dailyGoal, slotMinutes = settings.schedule.slotMinutes)
                 }
                 container.celebrationManager.celebrate(celebration)
             } finally {

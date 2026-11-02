@@ -92,4 +92,37 @@ class FormatTest {
         assertEquals("Tue, Nov 3", formatPauseEnd(today.plusDays(1), today, us))
         assertEquals("you resume", formatPauseEnd(Settings.PAUSED_UNTIL_RESUMED, today, us))
     }
+
+
+    private fun time(hour: Int, minute: Int) = formatTime(java.time.LocalTime.of(hour, minute))
+
+    @Test
+    fun `a plan shows its real check times for the interval`() {
+        val plan = com.hourlysteps.domain.DayPlan()
+        assertEquals("7,000 · ${time(8, 50)}–${time(19, 50)}", formatPlan(plan, 60))
+        assertEquals("7,000 · ${time(8, 25)}–${time(19, 55)}", formatPlan(plan, 30))
+        assertEquals("7,000 · ${time(9, 40)}–${time(19, 40)}", formatPlan(plan, 120))
+    }
+
+    @Test
+    fun `the plan caption follows the interval`() {
+        val plan = com.hourlysteps.domain.DayPlan()
+        assertEquals("24 reminders · ≈ 292 steps per 30 min", formatPlanCaption(plan, 30))
+        assertEquals("12 reminders · ≈ 584 steps per hour", formatPlanCaption(plan, 60))
+        assertEquals("6 reminders · ≈ 1,167 steps per 2 hours", formatPlanCaption(plan, 120))
+    }
+
+    @Test
+    fun `the picker caption follows the interval`() {
+        val plan = com.hourlysteps.domain.DayPlan()
+        assertEquals("24 reminders · ≈ 292/30 min", formatPickerCaption(plan, 30))
+        assertEquals("12 reminders · ≈ 584/hr", formatPickerCaption(plan, 60))
+        assertEquals("≈ 1,167/2 hr", formatSlotGoal(plan, 120))
+    }
+
+    @Test
+    fun `one reminder is singular`() {
+        val plan = com.hourlysteps.domain.DayPlan(startMinute = 8 * 60, endMinute = 9 * 60)
+        assertEquals("1 reminder · ≈ 7,000 steps per hour", formatPlanCaption(plan, 60))
+    }
 }

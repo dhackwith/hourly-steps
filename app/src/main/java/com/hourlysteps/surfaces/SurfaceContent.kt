@@ -2,6 +2,8 @@ package com.hourlysteps.surfaces
 
 import com.hourlysteps.domain.DayStatus
 import com.hourlysteps.domain.DayStatusKind
+import com.hourlysteps.domain.Settings
+import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.ui.formatNextCheck
 import com.hourlysteps.ui.formatPauseEnd
 import com.hourlysteps.ui.formatSteps
@@ -22,6 +24,8 @@ data class RingContent(
     val catchUpLine: String?,
     val detailLine: String?,
 )
+
+private val DayStatus.slotLength: Int get() = slot?.lengthMinutes ?: Settings.DEFAULT_SLOT_MINUTES
 
 fun ringContent(status: DayStatus): RingContent {
     val total = formatSteps(status.todayTotal)
@@ -52,10 +56,10 @@ fun ringContent(status: DayStatus): RingContent {
         else -> base.copy(
             title = if (status.dailyGoalMet) "Goal met · stay active" else null,
             value = formatSteps(status.stepsInSlot),
-            valueCaption = "of ${formatSteps(status.slotTarget)} this hour",
+            valueCaption = "of ${formatSteps(status.slotTarget)} ${SlotWording.current(status.slotLength)}",
             captionIsSlot = true,
             todayLine = status.dailyGoal?.let { "Today $total / ${formatSteps(it)}" },
-            catchUpLine = status.catchUpPerSlot?.let { "${formatSteps(it)}/hr to catch up" },
+            catchUpLine = status.catchUpPerSlot?.let { "${formatSteps(it)}${SlotWording.perSlotShort(status.slotLength)} to catch up" },
         )
     }
 }
@@ -88,7 +92,7 @@ fun slotComplication(status: DayStatus): ComplicationContent {
         max = status.slotTarget.coerceAtLeast(1).toFloat(),
         shortText = steps,
         shortTitle = "of $target",
-        longText = "$steps of $target this hour",
+        longText = "$steps of $target ${SlotWording.current(status.slotLength)}",
     )
 }
 

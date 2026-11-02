@@ -21,6 +21,7 @@ import androidx.wear.compose.material3.Text
 import com.hourlysteps.domain.CheckRecord
 import com.hourlysteps.domain.DayStatusKind
 import com.hourlysteps.domain.SlotOutcome
+import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.domain.SlotRow
 import com.hourlysteps.domain.TodaySummary
 import com.hourlysteps.surfaces.RingColors
@@ -30,7 +31,7 @@ import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
 
-/** Today hour by hour, so "it didn't buzz, is it broken?" has an answer on the watch. */
+/** Today slot by slot, so "it didn't buzz, is it broken?" has an answer on the watch. */
 @Composable
 fun TodayPage(summary: TodaySummary) {
     val listState = rememberScalingLazyListState()
@@ -66,7 +67,7 @@ private fun summaryLine(summary: TodaySummary): String {
     return when {
         summary.kind == DayStatusKind.DAY_OFF -> "Day off · $total steps"
         summary.slotsTotal == 0 -> "$total steps"
-        else -> "${summary.slotsHit} of ${summary.slotsTotal} hours hit"
+        else -> "${summary.slotsHit} of ${summary.slotsTotal} ${SlotWording.plural(summary.rows.first().slot.lengthMinutes)} hit"
     }
 }
 

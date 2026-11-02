@@ -2,28 +2,28 @@
 <resources>
     <string name="app_name">Hourly Steps</string>
 
-    <string name="channel_goal_name">Hourly goal reminders</string>
-    <string name="channel_goal_description">Reminds you at :50 when you are short of this hour\'s step goal.</string>
+    <string name="channel_goal_name">Step goal reminders</string>
+    <string name="channel_goal_description">Reminds you near the end of each interval when you are short of its step goal.</string>
     <string name="channel_inactivity_name">Inactivity reminders</string>
     <string name="channel_inactivity_description">Keeps nudging you to move after today\'s goal is met.</string>
 
     <string name="channel_celebration_name">Goal celebrations</string>
-    <string name="channel_celebration_description">Celebrates when you reach this hour\'s step goal.</string>
-    <string name="celebration_hourly_title">🎉 Hourly goal achieved!</string>
+    <string name="channel_celebration_description">Celebrates when you reach an interval\'s step goal, or today\'s.</string>
+    <string name="celebration_slot_title">🎉 %1$s achieved!</string>
     <string name="celebration_inactivity_title">🎉 Still moving, nice work!</string>
-    <string name="celebration_steps_this_hour">%1$s steps this hour</string>
+    <string name="celebration_steps_in_slot">%1$s steps %2$s</string>
     <string name="celebration_daily_title">🏆 Daily goal achieved!</string>
     <string name="celebration_steps_today">%1$s steps today</string>
 
-    <string name="complication_slot_label">Hourly Steps: this hour</string>
+    <string name="complication_slot_label">Hourly Steps: this interval</string>
     <string name="complication_today_label">Hourly Steps: today</string>
 
     <string name="notif_title">Time to move</string>
     <string name="notif_action_snooze">Snooze 5 min</string>
     <string name="notif_action_pause_today">Pause today</string>
     <plurals name="notif_more_steps">
-        <item quantity="one">%1$s more step this hour</item>
-        <item quantity="other">%1$s more steps this hour</item>
+        <item quantity="one">%1$s more step %2$s</item>
+        <item quantity="other">%1$s more steps %2$s</item>
     </plurals>
-    <string name="notif_catch_up">(%1$s/hr to catch up today)</string>
+    <string name="notif_catch_up">(%1$s%2$s to catch up today)</string>
 </resources>

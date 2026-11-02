@@ -35,7 +35,7 @@ object CheckDecider {
                 }
             }
             CheckMode.INACTIVITY -> {
-                val threshold = settings.inactivityThreshold
+                val threshold = GoalCalculator.inactivityGoal(settings.inactivityThreshold, slot.lengthMinutes)
                 if (stepsInSlot >= threshold) CheckResult.None
                 else CheckResult.InactivityShortfall(need = threshold - stepsInSlot)
             }
