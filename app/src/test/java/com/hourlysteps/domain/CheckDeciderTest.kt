@@ -23,9 +23,8 @@ class CheckDeciderTest {
     }
 
     @Test
-    fun `a slow start raises the slot goal`() {
-        // 28 before this slot, 6,972 to go across 10 hours -> 698.
-        assertEquals(CheckResult.GoalShortfall(need = 326), decide(steps = 372, total = 400))
+    fun `a slow start doesn't raise the slot goal`() {
+        assertEquals(CheckResult.GoalShortfall(need = 212), decide(steps = 372, total = 400))
     }
 
     @Test
@@ -69,8 +68,8 @@ class CheckDeciderTest {
     }
 
     @Test
-    fun `the last slot asks for everything left`() {
-        assertEquals(CheckResult.GoalShortfall(need = 1500), decide(steps = 0, total = 5500, hour = 19))
+    fun `the last slot asks for no more than the even share`() {
+        assertEquals(CheckResult.GoalShortfall(need = 584), decide(steps = 0, total = 5500, hour = 19))
     }
 
     @Test

@@ -5,9 +5,10 @@ hour, at :50, when you are short of an hourly step goal derived from your daily 
 different rhythm? Reminders can also come every 30 minutes or every 2 hours.
 
 - Default: 7,000 steps/day over 12 reminders (8:50 AM – 7:50 PM), which starts at 584 steps/hour.
-- Each hour's goal is what's left of your daily goal shared across the hours left, so it follows how
-  the day has gone. With 2,400 steps by 11 AM that hour asks for 512; with only 500 it asks for 723.
-  A goal holds still during its hour and the next hour takes your new total into account.
+- Walking extra lowers the goals ahead: each hour's goal is what's left of your daily goal shared
+  across the hours left, so with 2,400 steps by 11 AM that hour asks for 512. Falling behind never
+  raises it above 584; the pace line shows how far behind you are instead. A goal holds still during
+  its hour and the next hour takes your new total into account.
 - The reminder opens a **Pace check** screen: `312 left this hour`, a bar for the hour, and a bar for
   today with a tick where you should be by now, plus `1,100 behind pace`. It follows your steps
   while open and closes itself once the hour's goal is met. Home and the tile show the same pace line.

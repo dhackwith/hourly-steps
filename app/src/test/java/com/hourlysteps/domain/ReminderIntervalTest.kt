@@ -101,8 +101,8 @@ class ReminderIntervalTest {
     @Test
     fun `a goal check reports the shortfall against the interval's goal`() {
         val result = CheckDecider.decide(settings(30), plan, slotAt(30, 14), 100, 1000)
-        // 900 before this half hour, 6,100 to go across 12 half hours -> 509.
-        assertEquals(CheckResult.GoalShortfall(need = 409), result)
+        // Behind for the day, so this half hour stays at its even share of 292.
+        assertEquals(CheckResult.GoalShortfall(need = 192), result)
     }
 
     @Test

@@ -151,6 +151,15 @@ class SurfaceContentTest {
     }
 
     @Test
+    fun `a slow day keeps the even share and shows the gap as pace`() {
+        val st = DayStatus.compute(at(11, 7), settings, 66, 566)
+        assertEquals(584, st.slotTarget)
+        assertEquals("of 584 this hour", ringContent(st).valueCaption)
+        assertEquals("1,253 behind pace", ringContent(st).paceLine)
+        assertEquals("1,253 behind pace", paceCheckContent(st)!!.paceLine)
+    }
+
+    @Test
     fun `this hour's number holds still as steps come in`() {
         assertEquals(512, DayStatus.compute(at(11, 7), settings, 0, 2400).slotTarget)
         assertEquals(512, DayStatus.compute(at(11, 30), settings, 300, 2700).slotTarget)
@@ -248,21 +257,21 @@ class SurfaceContentTest {
     @Test
     fun `the slot caption names the half hour`() {
         val c = ringContent(status(total = 400, s = withInterval(30)))
-        assertEquals("of 345 this half hour", c.valueCaption)
+        assertEquals("of 292 this half hour", c.valueCaption)
         assertEquals("962 behind pace", c.paceLine)
     }
 
     @Test
     fun `the slot caption names the two hours`() {
         val c = ringContent(status(total = 400, s = withInterval(120)))
-        assertEquals("of 1,379 these two hours", c.valueCaption)
+        assertEquals("of 1,167 these two hours", c.valueCaption)
         assertEquals("962 behind pace", c.paceLine)
     }
 
     @Test
     fun `a short last slot says what it is`() {
         val c = ringContent(status(hour = 18, s = withInterval(120, endMinute = 19 * 60)))
-        assertEquals("of 3,792 this hour", c.valueCaption)
+        assertEquals("of 1,167 this hour", c.valueCaption)
     }
 
     @Test
@@ -275,10 +284,9 @@ class SurfaceContentTest {
     @Test
     fun `the pace check shows what's left and how the day stands`() {
         val c = paceCheckContent(status(hour = 12, inSlot = 272, total = 1720))!!
-        // 1,448 before this hour, 5,552 to go across 8 hours.
-        assertEquals("422", c.left)
+        assertEquals("312", c.left)
         assertEquals("left this hour", c.caption)
-        assertEquals(272f / 694, c.slotProgress, 0.001f)
+        assertEquals(272f / 584, c.slotProgress, 0.001f)
         assertEquals("Today 1,720 of 7,000", c.todayLine)
         assertEquals(1720f / 7000, c.todayProgress, 0.001f)
         assertEquals(2528f / 7000, c.paceMarker!!, 0.001f)

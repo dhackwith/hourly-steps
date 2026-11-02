@@ -43,14 +43,14 @@ class TodaySummaryTest {
     @Test
     fun `the current slot is in progress until it reaches its goal`() {
         assertEquals(SlotOutcome.IN_PROGRESS, summary(at(10, 20), listOf(point(10, 10, 100))).row(10).outcome)
-        assertEquals(SlotOutcome.HIT, summary(at(10, 20), listOf(point(10, 10, 700))).row(10).outcome)
+        assertEquals(SlotOutcome.HIT, summary(at(10, 20), listOf(point(10, 10, 584))).row(10).outcome)
     }
 
     @Test
     fun `a finished slot that reached its goal is a hit`() {
-        val s = summary(at(11), listOf(point(10, 30, 700)), listOf(check(10)))
+        val s = summary(at(11), listOf(point(10, 30, 600)), listOf(check(10)))
         assertEquals(SlotOutcome.HIT, s.row(10).outcome)
-        assertEquals(700, s.row(10).steps)
+        assertEquals(600, s.row(10).steps)
         assertEquals(1, s.slotsHit)
     }
 
@@ -76,7 +76,7 @@ class TodaySummaryTest {
 
     @Test
     fun `reaching the goal counts even if the check was skipped`() {
-        val row = summary(at(11), listOf(point(10, 30, 700)), listOf(check(10, skipped = "charging"))).row(10)
+        val row = summary(at(11), listOf(point(10, 30, 600)), listOf(check(10, skipped = "charging"))).row(10)
         assertEquals(SlotOutcome.HIT, row.outcome)
     }
 
@@ -173,6 +173,13 @@ class TodaySummaryTest {
     fun `upcoming slots count steps already past the current goal`() {
         val s = summary(at(11, 7), listOf(point(10, 30, 2400), point(11, 5, 1000)))
         assertEquals(450, s.row(12).goal)
+    }
+
+    @Test
+    fun `upcoming slots stay at the even share on a slow day`() {
+        val s = summary(at(11, 7), listOf(point(10, 30, 500)))
+        assertEquals(584, s.row(11).goal)
+        assertEquals(584, s.row(12).goal)
     }
 
     @Test

@@ -16,9 +16,15 @@ object GoalCalculator {
      * Steps to aim for in [slot]: what was left of the daily goal when it began, shared between it
      * and the slots after it. Steps taken during the slot don't move it, so it holds still until
      * the next slot, which then accounts for how this one went.
+     *
+     * Walking extra lowers it, but falling behind never raises it above the even share. [Pace]
+     * says how far behind the day is instead.
      */
     fun slotGoalFromRemaining(dailyGoal: Int, slot: Slot, totalAtSlotStart: Int): Int =
-        ceilDiv((dailyGoal - totalAtSlotStart).coerceAtLeast(0), (slot.count - slot.index).coerceAtLeast(1))
+        minOf(
+            ceilDiv(dailyGoal, slot.count.coerceAtLeast(1)),
+            ceilDiv((dailyGoal - totalAtSlotStart).coerceAtLeast(0), (slot.count - slot.index).coerceAtLeast(1)),
+        )
 
     fun ceilDiv(numerator: Int, denominator: Int): Int =
         (numerator + denominator - 1) / denominator

@@ -127,7 +127,10 @@ data class TodaySummary(
                 maxOf(total, totalAtStart + GoalCalculator.slotGoalFromRemaining(plan.dailyGoal, it, totalAtStart))
             } ?: total
             val slotsLeft = current?.let { it.count - it.index - 1 } ?: slotCount
-            return GoalCalculator.ceilDiv((plan.dailyGoal - expected).coerceAtLeast(0), slotsLeft.coerceAtLeast(1)).coerceAtLeast(1)
+            return minOf(
+                GoalCalculator.ceilDiv(plan.dailyGoal, slotCount.coerceAtLeast(1)),
+                GoalCalculator.ceilDiv((plan.dailyGoal - expected).coerceAtLeast(0), slotsLeft.coerceAtLeast(1)),
+            ).coerceAtLeast(1)
         }
     }
 }

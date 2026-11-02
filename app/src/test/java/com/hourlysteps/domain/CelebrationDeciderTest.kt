@@ -42,10 +42,9 @@ class CelebrationDeciderTest {
     }
 
     @Test
-    fun `falling behind raises the goal to celebrate`() {
-        // 500 before 11 AM, 6,500 to go across 9 hours -> 723.
-        assertNull(decide(steps = 722, total = 1222, hour = 11))
-        assertEquals(723, decide(steps = 723, total = 1223, hour = 11)?.target)
+    fun `falling behind doesn't raise the goal to celebrate`() {
+        assertNull(decide(steps = 583, total = 1083, hour = 11))
+        assertEquals(584, decide(steps = 584, total = 1084, hour = 11)?.target)
     }
 
     @Test

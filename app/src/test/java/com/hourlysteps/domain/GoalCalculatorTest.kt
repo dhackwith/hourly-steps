@@ -76,13 +76,20 @@ class GoalCalculatorTest {
     }
 
     @Test
-    fun `falling behind raises the goal for the hours left`() {
-        assertEquals(723, GoalCalculator.slotGoalFromRemaining(7000, slot(11), 500))
+    fun `falling behind never raises the goal above the even share`() {
+        assertEquals(584, GoalCalculator.slotGoalFromRemaining(7000, slot(11), 500))
+        assertEquals(584, GoalCalculator.slotGoalFromRemaining(7000, slot(11), 0))
     }
 
     @Test
-    fun `the last slot asks for everything left`() {
-        assertEquals(1500, GoalCalculator.slotGoalFromRemaining(7000, slot(19), 5500))
+    fun `the goal is the even share when exactly on track`() {
+        assertEquals(584, GoalCalculator.slotGoalFromRemaining(7000, slot(11), 1752))
+    }
+
+    @Test
+    fun `the last slot asks for what's left, up to the even share`() {
+        assertEquals(584, GoalCalculator.slotGoalFromRemaining(7000, slot(19), 5500))
+        assertEquals(200, GoalCalculator.slotGoalFromRemaining(7000, slot(19), 6800))
     }
 
     @Test
