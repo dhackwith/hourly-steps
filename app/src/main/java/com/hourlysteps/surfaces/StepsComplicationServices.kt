@@ -14,7 +14,7 @@ import com.hourlysteps.HourlyStepsApp
 import com.hourlysteps.domain.DayStatus
 import com.hourlysteps.ui.MainActivity
 
-/** Base for the two watch-face data sources; each picks which number it shows. */
+/** Base for the watch-face data sources; each picks which number it shows. */
 abstract class StepsComplicationService : SuspendingComplicationDataSourceService() {
 
     protected abstract fun content(status: DayStatus): ComplicationContent
@@ -67,4 +67,10 @@ class SlotComplicationService : StepsComplicationService() {
 class TodayComplicationService : StepsComplicationService() {
     override fun content(status: DayStatus) = todayComplication(status)
     override val previewContent = ComplicationContent(3100f, 7000f, "3,100", "today", "3,100 of 7,000 today")
+}
+
+/** How many reminders today has. */
+class ReminderCountComplicationService : StepsComplicationService() {
+    override fun content(status: DayStatus) = reminderCountComplication(status)
+    override val previewContent = ComplicationContent(12f, 12f, "12", "reminders", "12 reminders today")
 }

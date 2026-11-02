@@ -172,6 +172,50 @@ class SurfaceContentTest {
     }
 
     @Test
+    fun `the reminder count complication carries the count as its value`() {
+        val c = reminderCountComplication(status())
+        assertEquals(12f, c.value, 0.001f)
+        assertEquals(12f, c.max, 0.001f)
+        assertEquals(0f, c.min, 0.001f)
+        assertEquals("12", c.shortText)
+        assertEquals("reminders", c.shortTitle)
+        assertEquals("12 reminders today", c.longText)
+    }
+
+    @Test
+    fun `the reminder count follows the interval`() {
+        assertEquals(24f, reminderCountComplication(status(s = withInterval(30))).value, 0.001f)
+        assertEquals(6f, reminderCountComplication(status(s = withInterval(120))).value, 0.001f)
+        assertEquals(6f, reminderCountComplication(status(hour = 18, s = withInterval(120, endMinute = 19 * 60))).value, 0.001f)
+    }
+
+    @Test
+    fun `the reminder count doesn't change with the steps or the hour`() {
+        val counts = listOf(
+            status(hour = 8, inSlot = 0, total = 0),
+            status(hour = 11, inSlot = 66, total = 2466),
+            status(hour = 19, inSlot = 0, total = 6900),
+            status(hour = 14, inSlot = 100, total = 9000),
+            status(hour = 22, inSlot = 0, total = 1000),
+            status(hour = 6, inSlot = 0, total = 0),
+        )
+        counts.forEach { assertEquals(12f, reminderCountComplication(it).value, 0.001f) }
+    }
+
+    @Test
+    fun `a paused day still has its reminder count`() {
+        val paused = settings.copy(pausedThrough = day)
+        assertEquals(12f, reminderCountComplication(status(s = paused)).value, 0.001f)
+    }
+
+    @Test
+    fun `a day off has no reminders`() {
+        val c = reminderCountComplication(status(s = allOff))
+        assertEquals(0f, c.value, 0.001f)
+        assertEquals("Off", c.shortText)
+    }
+
+    @Test
     fun `slot complication shows steps against the target`() {
         val c = slotComplication(status())
         assertEquals(292f, c.value, 0.001f)

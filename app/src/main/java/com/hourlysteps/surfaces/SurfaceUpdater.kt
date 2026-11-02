@@ -30,7 +30,11 @@ class SurfaceUpdater(private val context: Context) {
         lastUpdate = now
         runCatching {
             TileService.getUpdater(context).requestUpdate(HourlyStepsTileService::class.java)
-            listOf(SlotComplicationService::class.java, TodayComplicationService::class.java).forEach {
+            listOf(
+                SlotComplicationService::class.java,
+                TodayComplicationService::class.java,
+                ReminderCountComplicationService::class.java,
+            ).forEach {
                 ComplicationDataSourceUpdateRequester.create(context, ComponentName(context, it)).requestUpdateAll()
             }
         }.onFailure { Log.w(TAG, "Could not request surface update", it) }

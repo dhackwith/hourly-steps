@@ -31,7 +31,7 @@ different rhythm? Reminders can also come every 30 minutes or every 2 hours.
 - **Pause reminders** for the rest of today, through tomorrow, for a week, or until you resume.
   Steps keep counting.
 - See your progress without opening the app: a **tile** with two rings (today outside, this hour
-  inside), watch-face **complications** for this hour and for today, and a **Today** page (swipe
+  inside), watch-face **complications** for this hour, for today and for how many reminders today has, and a **Today** page (swipe
   left on Home) showing each hour's result and why a reminder did or didn't fire.
 - **Reminder interval** sets how often reminders come. The check lands a sixth of the way before
   each period ends: :25 and :55 every 30 minutes (starting at 292 steps each), :50 every hour (584), and 20

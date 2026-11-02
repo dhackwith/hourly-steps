@@ -137,6 +137,22 @@ fun slotComplication(status: DayStatus): ComplicationContent {
     )
 }
 
+/**
+ * How many reminders today's plan has, as the value. A watch face that draws one segment per
+ * reminder reads it from here because the slot target no longer divides the daily goal evenly.
+ */
+fun reminderCountComplication(status: DayStatus): ComplicationContent {
+    val count = status.slotCount
+    if (count == 0) return unavailable("Off")
+    return ComplicationContent(
+        value = count.toFloat(),
+        max = count.toFloat(),
+        shortText = count.toString(),
+        shortTitle = if (count == 1) "reminder" else "reminders",
+        longText = if (count == 1) "1 reminder today" else "$count reminders today",
+    )
+}
+
 /** Today's total against the daily goal. */
 fun todayComplication(status: DayStatus): ComplicationContent {
     status.unavailableContent()?.let { return it }

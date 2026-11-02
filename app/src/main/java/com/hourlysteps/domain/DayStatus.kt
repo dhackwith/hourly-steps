@@ -25,6 +25,8 @@ data class DayStatus(
     val mode: CheckMode,
     /** What this slot is measured against: the slot goal, or the inactivity threshold once the daily goal is met. */
     val slotTarget: Int,
+    /** How many reminder slots today's plan has, or 0 on a day off. */
+    val slotCount: Int,
     /** Steps to have by now to be on track; only set inside a slot while the daily goal is still open. */
     val paceTarget: Int?,
     val nextCheck: ZonedDateTime?,
@@ -86,6 +88,7 @@ data class DayStatus(
                 } else {
                     slotGoal
                 },
+                slotCount = plan?.let { GoalCalculator.slotCount(it, slotMinutes) } ?: 0,
                 paceTarget = paceTarget,
                 nextCheck = ReminderSchedule.nextCheckTime(now, settings),
                 pausedThrough = settings.pausedThrough,
