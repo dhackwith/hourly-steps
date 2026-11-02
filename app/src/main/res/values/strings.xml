@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hourly Steps</string>
+
+    <string name="channel_goal_name">Hourly goal reminders</string>
+    <string name="channel_goal_description">Reminds you at :50 when you are short of this hour\'s step goal.</string>
+    <string name="channel_inactivity_name">Inactivity reminders</string>
+    <string name="channel_inactivity_description">Keeps nudging you to move after today\'s goal is met.</string>
+
+    <string name="notif_title">Time to move</string>
+    <plurals name="notif_more_steps">
+        <item quantity="one">%1$d more step this hour</item>
+        <item quantity="other">%1$d more steps this hour</item>
+    </plurals>
+    <string name="notif_catch_up">(%1$d/hr to catch up today)</string>
+</resources>
