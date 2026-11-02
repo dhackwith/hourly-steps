@@ -10,6 +10,7 @@ import com.hourlysteps.data.db.CheckLogEntity
 import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.data.steps.ActivityStore
 import com.hourlysteps.data.steps.StepsRepository
+import com.hourlysteps.data.steps.StreakRepository
 import com.hourlysteps.domain.CheckDecider
 import com.hourlysteps.domain.CheckMode
 import com.hourlysteps.domain.CheckResult
@@ -30,6 +31,7 @@ class ReminderCheck(
     private val settingsRepository: SettingsRepository,
     private val stepsRepository: StepsRepository,
     private val activityStore: ActivityStore,
+    private val streakRepository: StreakRepository,
     private val notifier: ReminderNotifier,
     private val scheduler: ReminderScheduler,
     private val checkLogDao: CheckLogDao,
@@ -59,6 +61,7 @@ class ReminderCheck(
         scheduler.ensureScheduled(after)
         surfaceUpdater.updateNow()
 
+        streakRepository.finalizePastDays() // before pruning, while the steps are still there
         stepsRepository.pruneOlderThan(RETENTION_DAYS)
         checkLogDao.pruneBefore(now.toLocalDate().minusDays(RETENTION_DAYS).toString())
         return outcome.result

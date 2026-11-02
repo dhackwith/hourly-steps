@@ -19,6 +19,7 @@ data class Settings(
     val secondNudge: Boolean = false,
     /** Vibrate and show a celebration when this slot's goal is reached. */
     val celebrate: Boolean = true,
+    val celebrateDaily: Boolean = true,
 ) {
     fun isPaused(date: LocalDate): Boolean = pausedThrough != null && !date.isAfter(pausedThrough)
 

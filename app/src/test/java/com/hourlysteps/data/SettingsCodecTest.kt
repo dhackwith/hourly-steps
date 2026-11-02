@@ -93,6 +93,7 @@ class SettingsCodecTest {
             skipDuringWorkouts = false,
             skipWhileAsleep = false,
             secondNudge = true,
+            celebrateDaily = false,
         )
         assertEquals(settings, roundTrip(settings))
     }

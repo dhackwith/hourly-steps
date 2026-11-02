@@ -97,6 +97,10 @@ class StepsRepository(
         dao.observeBetween(dayStart(date), dayStart(date.plusDays(1)))
             .map { rows -> rows.map { StepPoint(it.endMillis, it.steps) } }
 
+    /** The day of the oldest step data kept, or null if there is none. */
+    suspend fun earliestStepDay(): LocalDate? =
+        dao.earliestEndMillis()?.let { Instant.ofEpochMilli(it).atZone(clock.zone).toLocalDate() }
+
     suspend fun pruneOlderThan(days: Long) {
         dao.pruneBefore(dayStart(ZonedDateTime.now(clock).toLocalDate().minusDays(days)))
     }

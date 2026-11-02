@@ -12,6 +12,8 @@
     <string name="celebration_hourly_title">🎉 Hourly goal achieved!</string>
     <string name="celebration_inactivity_title">🎉 Still moving, nice work!</string>
     <string name="celebration_steps_this_hour">%1$s steps this hour</string>
+    <string name="celebration_daily_title">🏆 Daily goal achieved!</string>
+    <string name="celebration_steps_today">%1$s steps today</string>
 
     <string name="complication_slot_label">Hourly Steps: this hour</string>
     <string name="complication_today_label">Hourly Steps: today</string>

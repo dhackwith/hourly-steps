@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.hourlysteps.AppContainer
 import com.hourlysteps.domain.DayStatus
 import com.hourlysteps.domain.Slots
+import com.hourlysteps.domain.StreakInfo
 import com.hourlysteps.domain.TodaySummary
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
@@ -56,6 +57,10 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
             container.stepsRepository.observeDayPoints(date),
             container.observeDayChecks(date),
         ) { time, s, points, checks -> TodaySummary.compute(time, s, points, checks) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val streak: StateFlow<StreakInfo?> = day.flatMapLatest { date ->
+        container.streakRepository.observe(date)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun resume() {

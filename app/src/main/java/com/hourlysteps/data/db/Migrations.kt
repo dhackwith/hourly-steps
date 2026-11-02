@@ -75,3 +75,13 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         db.execSQL("ALTER TABLE check_log ADD COLUMN isFollowUp INTEGER NOT NULL DEFAULT 0")
     }
 }
+
+/** v3 to v4: a record of how each finished day went, for streaks. */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS day_summary " +
+                "(date TEXT NOT NULL PRIMARY KEY, steps INTEGER NOT NULL, dailyGoal INTEGER, result TEXT NOT NULL)",
+        )
+    }
+}

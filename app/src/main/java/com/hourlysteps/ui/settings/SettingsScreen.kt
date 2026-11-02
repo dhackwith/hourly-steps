@@ -190,8 +190,17 @@ fun SettingsScreen(
                     checked = settings.celebrate,
                     onCheckedChange = { checked -> update { it.copy(celebrate = checked) } },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Celebrate goals") },
+                    label = { Text("Hourly goal") },
                     secondaryLabel = { Text("Fireworks when you hit the hour") },
+                )
+            }
+            item {
+                SwitchButton(
+                    checked = settings.celebrateDaily,
+                    onCheckedChange = { checked -> update { it.copy(celebrateDaily = checked) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Daily goal") },
+                    secondaryLabel = { Text("Gold fireworks and your streak") },
                 )
             }
 

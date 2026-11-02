@@ -10,8 +10,12 @@ when you are short of an hourly step goal derived from your daily goal.
 - Reaching this hour's goal is celebrated once per hour: a "da-da-daaa" buzz, then a
   "🎉 Hourly goal achieved!" alert that opens a fireworks screen. If the app is open, the
   fireworks show straight away. If the watch screen is asleep, it is lit briefly so the alert is
-  visible on wrist raise, unless Do Not Disturb or Bedtime mode is on. Turn it off with
-  **Celebrate goals** in Settings.
+  visible on wrist raise, unless Do Not Disturb or Bedtime mode is on.
+- Reaching your daily goal gets a bigger moment: gold fireworks, today's total and your streak.
+  Each celebration has its own switch in Settings.
+- **Streaks** count the days in a row you hit your goal. Days off and paused days neither extend
+  nor break one, so a rest day never costs you. Swipe to the last page on Home for your streak,
+  your longest, and the past week.
 - Your week doesn't have to be Monday to Friday. Use one plan or two, each with its own goal and
   hours, and set every day of the week to Plan A, Plan B or Off.
 - **Pause reminders** for the rest of today, through tomorrow, for a week, or until you resume.
@@ -62,6 +66,13 @@ watch on its face or asleep, debug builds also accept:
 
 ```bash
 adb shell am broadcast -a com.hourlysteps.debug.CELEBRATE -p com.hourlysteps
+```
+
+Add `--ez daily true` for the daily goal celebration. To see the Streak page with history, set the
+past days, oldest first, ending yesterday:
+
+```bash
+adb shell am broadcast -a com.hourlysteps.debug.SET_STREAK_HISTORY --es days MET,MET,MISSED,MET,REST,MET,MET -p com.hourlysteps
 ```
 
 Sleep comes from Health Services' synthetic events. No workout app is on the emulator, so debug

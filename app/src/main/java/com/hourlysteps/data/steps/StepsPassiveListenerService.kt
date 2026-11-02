@@ -23,6 +23,7 @@ class StepsPassiveListenerService : PassiveListenerService() {
         runBlocking {
             runCatching {
                 container.stepsRepository.record(steps)
+                container.streakRepository.finalizePastDays()
                 container.reminderNotifier.dismissIfSatisfied()
                 container.celebrationManager.onStepsRecorded()
                 container.surfaceUpdater.onStepsChanged()

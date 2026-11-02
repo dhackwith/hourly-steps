@@ -190,7 +190,7 @@ All three read one `DayStatus`, computed in one place, so they never disagree.
 
 ### 4. Today's hours view
 
-- Home is a horizontal pager: **Rings** → **Today** → **Streak** (Phase D). Settings stays on the
+- Home is a horizontal pager: **Rings** → **Today** → **Streak**. Settings stays on the
   edge button of the first page. The stock page indicator sits where that button is, so the
   rings page draws its own dots above it.
 - **Today page:** one row per slot: time, steps / goal, and a status glyph:
@@ -245,14 +245,16 @@ snooze never crosses the slot end; nudge cancelled when the goal is met in betwe
 
 ---
 
-## Phase D — Motivation
+## Phase D — Motivation (done)
 
 ### 9. Daily goal celebration
 
-- Detect `todayTotal` crossing `dailyGoal` in a step batch, once per day, any time of day.
-- Bigger moment than the hourly one: gold palette, longer fireworks, "Daily goal achieved!",
-  the total, and the streak line ("3 days in a row").
-- If the hourly and daily goals cross in the same batch, show only the daily celebration.
+- Detect `todayTotal` crossing `dailyGoal` in a step batch, once per day, any time of day, even
+  outside the reminder window. Not on days off or while paused, and held back while asleep.
+- Bigger moment than the hourly one: denser gold fireworks, 10 seconds instead of 7, "Daily goal
+  achieved!", the total, and the streak line ("3 days in a row").
+- If the hourly and daily goals cross in the same batch, show only the daily celebration, and
+  that slot doesn't celebrate again.
 - Same channel and the same screen-wake rule as the hourly celebration; its own setting.
 
 ### 7. Streaks with rest days
@@ -263,11 +265,15 @@ snooze never crosses the slot end; nudge cancelled when the goal is met in betwe
   it to zero.
 - **Rest days** are the pause feature (3): "Pause reminders · Rest of today" marks today
   streak-neutral. No separate concept, no "streak freeze" items.
-- **Computed** from `day_summary`, which the end-of-day job writes (the last slot's check, or a
-  midnight alarm when the window ends earlier). Current and longest streak are cached in
-  DataStore for the tile.
+- **Computed** from `day_summary`. A finished day is recorded the next time anything runs: the
+  first step batch, check or screen of a new day. That needs no midnight alarm, and it recovers
+  by itself if the watch was off. Days with no data count as missed. Records are kept
+  indefinitely, because steps are only kept for 14 days and a year of records is tiny.
+- A day is judged by the settings in force when it is recorded, so a schedule change made right
+  after midnight, before anything has run, would apply to the day before.
 - **UI.** Third pager page: streak count, longest streak, and a 7-day strip (✓ met, ✗ missed,
-  – rest). The daily celebration shows the new count.
+  – rest, a ring for today). The daily celebration shows the new count. The tile does not show
+  the streak.
 
 **Tests.** Streak across days off, paused spans, a missed day, today in progress, and the
 longest-streak bookkeeping.

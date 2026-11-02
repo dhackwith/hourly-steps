@@ -6,6 +6,9 @@ enum class CelebrationKind {
 
     /** Daily goal already met; this slot's inactivity threshold was reached. */
     INACTIVITY_GOAL,
+
+    /** Today's total reached the daily goal. */
+    DAILY_GOAL,
 }
 
 data class Celebration(
@@ -14,6 +17,8 @@ data class Celebration(
     val target: Int,
     val todayTotal: Int,
     val dailyGoal: Int,
+    /** Days in a row including today; only set for the daily goal. */
+    val streak: Int = 0,
 )
 
 object CelebrationDecider {
@@ -46,5 +51,17 @@ object CelebrationDecider {
         }
         if (stepsInSlot < target) return null
         return Celebration(kind, stepsInSlot, target, todayTotal, plan.dailyGoal)
+    }
+
+    /** Whether today's total has reached the daily goal and not yet been celebrated. */
+    fun decideDaily(
+        settings: Settings,
+        plan: DayPlan,
+        stepsInSlot: Int,
+        todayTotal: Int,
+        alreadyCelebratedToday: Boolean,
+    ): Celebration? {
+        if (!settings.celebrateDaily || alreadyCelebratedToday || todayTotal < plan.dailyGoal) return null
+        return Celebration(CelebrationKind.DAILY_GOAL, stepsInSlot, plan.dailyGoal, todayTotal, plan.dailyGoal)
     }
 }

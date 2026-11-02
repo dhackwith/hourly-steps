@@ -28,18 +28,31 @@ private val FireworkColors = listOf(
     Color(0xFFFFFFFF),
 )
 
+private val GoldColors = listOf(
+    Color(0xFFFFD54F), // gold
+    Color(0xFFFFE082), // pale gold
+    Color(0xFFFFB300), // amber
+    Color(0xFFFF8F00), // deep amber
+    Color(0xFFFFFFFF),
+)
+
+/** The hourly celebration's mixed colours, or the daily goal's denser gold. */
+enum class FireworkStyle(val colors: List<Color>, val burstsPerCycle: Int) {
+    STANDARD(FireworkColors, 7),
+    GOLD(GoldColors, 10),
+}
+
 private const val CYCLE_MS = 2_000L
-private const val BURSTS_PER_CYCLE = 7
 private const val BURST_LIFE_MS = 1_600L
 private const val SPARKS = 18
 
 /**
- * Looping firework bursts drawn on a Canvas. Each cycle places [BURSTS_PER_CYCLE] bursts at
- * seeded-random points around the edge of the round screen so the text in the middle stays
- * readable. With [animate] off (system animations disabled) a single still frame is drawn.
+ * Looping firework bursts drawn on a Canvas. Each cycle places its bursts at seeded-random points
+ * around the edge of the round screen so the text in the middle stays readable. With [animate] off
+ * (system animations disabled) a single still frame is drawn.
  */
 @Composable
-fun Fireworks(modifier: Modifier = Modifier, animate: Boolean = true) {
+fun Fireworks(modifier: Modifier = Modifier, animate: Boolean = true, style: FireworkStyle = FireworkStyle.STANDARD) {
     var elapsed by remember { mutableLongStateOf(if (animate) 0L else 650L) }
     if (animate) {
         LaunchedEffect(Unit) {
@@ -53,8 +66,8 @@ fun Fireworks(modifier: Modifier = Modifier, animate: Boolean = true) {
         val cycle = elapsed / CYCLE_MS
         val inCycle = elapsed % CYCLE_MS
         // Draw the tail of the previous cycle too so bursts don't vanish at the cycle boundary.
-        drawCycle(cycle, inCycle)
-        if (cycle > 0) drawCycle(cycle - 1, inCycle + CYCLE_MS)
+        drawCycle(cycle, inCycle, style)
+        if (cycle > 0) drawCycle(cycle - 1, inCycle + CYCLE_MS, style)
         // Soft dark glow in the middle so sparks fade out before they reach the text.
         drawCircle(
             brush = Brush.radialGradient(
@@ -69,12 +82,12 @@ fun Fireworks(modifier: Modifier = Modifier, animate: Boolean = true) {
     }
 }
 
-private fun DrawScope.drawCycle(cycle: Long, msIntoCycle: Long) {
+private fun DrawScope.drawCycle(cycle: Long, msIntoCycle: Long, style: FireworkStyle) {
     val radius = size.minDimension / 2f
     val center = Offset(size.width / 2f, size.height / 2f)
-    for (i in 0 until BURSTS_PER_CYCLE) {
+    for (i in 0 until style.burstsPerCycle) {
         val rnd = Random(cycle * 101 + i)
-        val startMs = (i * CYCLE_MS / BURSTS_PER_CYCLE) + rnd.nextLong(0, 200)
+        val startMs = (i * CYCLE_MS / style.burstsPerCycle) + rnd.nextLong(0, 200)
         val t = msIntoCycle - startMs
         if (t < 0 || t > BURST_LIFE_MS) continue
 
@@ -82,8 +95,8 @@ private fun DrawScope.drawCycle(cycle: Long, msIntoCycle: Long) {
         val placeAngle = rnd.nextDouble(0.0, 2 * PI)
         val placeDist = radius * rnd.nextDouble(0.50, 0.78).toFloat()
         val burstCenter = center + Offset(cos(placeAngle).toFloat() * placeDist, sin(placeAngle).toFloat() * placeDist)
-        val color = FireworkColors[rnd.nextInt(FireworkColors.size)]
-        val accent = FireworkColors[rnd.nextInt(FireworkColors.size)]
+        val color = style.colors[rnd.nextInt(style.colors.size)]
+        val accent = style.colors[rnd.nextInt(style.colors.size)]
         val reach = radius * rnd.nextDouble(0.30, 0.42).toFloat()
         val spin = rnd.nextDouble(0.0, 2 * PI)
 

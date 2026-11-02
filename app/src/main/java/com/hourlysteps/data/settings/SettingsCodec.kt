@@ -43,6 +43,7 @@ object SettingsCodec {
         val VIBRATION = stringPreferencesKey("vibration")
         val SKIP_WHILE_CHARGING = booleanPreferencesKey("skip_while_charging")
         val CELEBRATE = booleanPreferencesKey("celebrate")
+        val CELEBRATE_DAILY = booleanPreferencesKey("celebrate_daily")
         val SKIP_WORKOUTS = booleanPreferencesKey("skip_during_workouts")
         val SKIP_ASLEEP = booleanPreferencesKey("skip_while_asleep")
         val SECOND_NUDGE = booleanPreferencesKey("second_nudge")
@@ -84,6 +85,7 @@ object SettingsCodec {
                 ?: defaults.vibration,
             skipWhileCharging = prefs[Keys.SKIP_WHILE_CHARGING] ?: defaults.skipWhileCharging,
             celebrate = prefs[Keys.CELEBRATE] ?: defaults.celebrate,
+            celebrateDaily = prefs[Keys.CELEBRATE_DAILY] ?: defaults.celebrateDaily,
             skipDuringWorkouts = prefs[Keys.SKIP_WORKOUTS] ?: defaults.skipDuringWorkouts,
             skipWhileAsleep = prefs[Keys.SKIP_ASLEEP] ?: defaults.skipWhileAsleep,
             secondNudge = prefs[Keys.SECOND_NUDGE] ?: defaults.secondNudge,
@@ -116,6 +118,7 @@ object SettingsCodec {
         prefs[Keys.VIBRATION] = s.vibration.name
         prefs[Keys.SKIP_WHILE_CHARGING] = s.skipWhileCharging
         prefs[Keys.CELEBRATE] = s.celebrate
+        prefs[Keys.CELEBRATE_DAILY] = s.celebrateDaily
         prefs[Keys.SKIP_WORKOUTS] = s.skipDuringWorkouts
         prefs[Keys.SKIP_ASLEEP] = s.skipWhileAsleep
         prefs[Keys.SECOND_NUDGE] = s.secondNudge

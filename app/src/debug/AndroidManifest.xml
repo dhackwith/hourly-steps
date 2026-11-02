@@ -21,5 +21,14 @@
                 <action android:name="com.hourlysteps.debug.SET_ACTIVITY" />
             </intent-filter>
         </receiver>
+        <!-- Debug builds only: lets adb set the streak history. -->
+        <receiver
+            android:name=".debug.DebugStreakReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.hourlysteps.debug.SET_STREAK_HISTORY" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

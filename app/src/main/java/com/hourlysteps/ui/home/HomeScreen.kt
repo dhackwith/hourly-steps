@@ -36,13 +36,14 @@ import com.hourlysteps.domain.DayStatusKind
 import com.hourlysteps.surfaces.RingColors
 import com.hourlysteps.surfaces.ringContent
 
-private const val PAGE_COUNT = 2
+private const val PAGE_COUNT = 3
 
-/** Swipeable pages: the rings, then today hour by hour. */
+/** Swipeable pages: the rings, today hour by hour, then the streak. */
 @Composable
 fun HomeScreen(viewModel: HomeViewModel, onOpenSettings: () -> Unit) {
     val status by viewModel.status.collectAsStateWithLifecycle()
     val today by viewModel.today.collectAsStateWithLifecycle()
+    val streak by viewModel.streak.collectAsStateWithLifecycle()
     val pagerState = rememberPagerState { PAGE_COUNT }
 
     // The stock page indicator sits exactly where the Settings button is, so the rings page draws its own.
@@ -51,7 +52,8 @@ fun HomeScreen(viewModel: HomeViewModel, onOpenSettings: () -> Unit) {
             AnimatedPage(pageIndex = page, pagerState = pagerState) {
                 when (page) {
                     0 -> status?.let { HomeContent(it, pagerState, viewModel::resume, onOpenSettings) }
-                    else -> today?.let { TodayPage(it) }
+                    1 -> today?.let { TodayPage(it) }
+                    else -> streak?.let { StreakPage(it) }
                 }
             }
         }

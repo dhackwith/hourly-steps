@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -31,6 +32,8 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.hourlysteps.domain.Celebration
 import com.hourlysteps.domain.CelebrationKind
+import com.hourlysteps.domain.Streaks
+import com.hourlysteps.surfaces.RingColors
 import com.hourlysteps.ui.formatSteps
 import kotlinx.coroutines.delay
 
@@ -67,6 +70,7 @@ class CelebrationActivity : ComponentActivity() {
         private const val EXTRA_TARGET = "target"
         private const val EXTRA_TOTAL = "total"
         private const val EXTRA_DAILY_GOAL = "daily_goal"
+        private const val EXTRA_STREAK = "streak"
 
         fun intent(context: Context, c: Celebration): Intent =
             Intent(context, CelebrationActivity::class.java)
@@ -75,6 +79,7 @@ class CelebrationActivity : ComponentActivity() {
                 .putExtra(EXTRA_TARGET, c.target)
                 .putExtra(EXTRA_TOTAL, c.todayTotal)
                 .putExtra(EXTRA_DAILY_GOAL, c.dailyGoal)
+                .putExtra(EXTRA_STREAK, c.streak)
 
         private fun celebrationFrom(intent: Intent) = Celebration(
             kind = intent.getStringExtra(EXTRA_KIND)
@@ -84,15 +89,19 @@ class CelebrationActivity : ComponentActivity() {
             target = intent.getIntExtra(EXTRA_TARGET, 0),
             todayTotal = intent.getIntExtra(EXTRA_TOTAL, 0),
             dailyGoal = intent.getIntExtra(EXTRA_DAILY_GOAL, 0),
+            streak = intent.getIntExtra(EXTRA_STREAK, 0),
         )
     }
 }
 
 private const val SHOW_FOR_MS = 7_000L
+private const val SHOW_DAILY_FOR_MS = 10_000L
 
 @Composable
 fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: () -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val isDaily = celebration.kind == CelebrationKind.DAILY_GOAL
+    val gold = Color(RingColors.GOAL_MET)
     val scale = remember { Animatable(if (reduceMotion) 1f else 0.4f) }
     LaunchedEffect(Unit) {
         if (!reduceMotion) {
@@ -100,7 +109,7 @@ fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: (
         }
     }
     LaunchedEffect(Unit) {
-        delay(SHOW_FOR_MS)
+        delay(if (isDaily) SHOW_DAILY_FOR_MS else SHOW_FOR_MS)
         onDone()
     }
 
@@ -110,7 +119,11 @@ fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: (
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDone),
         contentAlignment = Alignment.Center,
     ) {
-        Fireworks(modifier = Modifier.fillMaxSize(), animate = !reduceMotion)
+        Fireworks(
+            modifier = Modifier.fillMaxSize(),
+            animate = !reduceMotion,
+            style = if (isDaily) FireworkStyle.GOLD else FireworkStyle.STANDARD,
+        )
 
         Column(
             modifier = Modifier
@@ -125,21 +138,31 @@ fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: (
             val (headline1, headline2) = when (celebration.kind) {
                 CelebrationKind.HOURLY_GOAL -> "Hourly goal" to "achieved!"
                 CelebrationKind.INACTIVITY_GOAL -> "Still moving" to "nice work!"
+                CelebrationKind.DAILY_GOAL -> "Daily goal" to "achieved!"
             }
-            Text("🎉", fontSize = 30.sp)
+            Text(if (isDaily) "🏆" else "🎉", fontSize = 30.sp)
             Text(headline1, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
-            Text(headline2, style = MaterialTheme.typography.titleLarge, color = colors.primary, textAlign = TextAlign.Center)
             Text(
-                formatSteps(celebration.stepsThisHour),
+                headline2,
+                style = MaterialTheme.typography.titleLarge,
+                color = if (isDaily) gold else colors.primary,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                formatSteps(if (isDaily) celebration.todayTotal else celebration.stepsThisHour),
                 style = MaterialTheme.typography.displayMedium,
                 textAlign = TextAlign.Center,
             )
             Text(
-                "steps this hour",
+                if (isDaily) "steps today" else "steps this hour",
                 style = MaterialTheme.typography.labelMedium,
                 color = colors.onSurfaceVariant,
             )
-            if (celebration.dailyGoal > 0) {
+            if (isDaily) {
+                Streaks.line(celebration.streak)?.let {
+                    Text(it, style = MaterialTheme.typography.labelMedium, color = gold, textAlign = TextAlign.Center)
+                }
+            } else if (celebration.dailyGoal > 0) {
                 Text(
                     "Today ${formatSteps(celebration.todayTotal)} / ${formatSteps(celebration.dailyGoal)}",
                     style = MaterialTheme.typography.labelSmall,

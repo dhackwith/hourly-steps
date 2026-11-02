@@ -13,10 +13,12 @@ import com.hourlysteps.R
 import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.data.steps.ActivityStore
 import com.hourlysteps.data.steps.StepsRepository
+import com.hourlysteps.data.steps.StreakRepository
 import com.hourlysteps.domain.Celebration
 import com.hourlysteps.domain.CelebrationDecider
 import com.hourlysteps.domain.CelebrationKind
 import com.hourlysteps.domain.Slots
+import com.hourlysteps.domain.Streaks
 import com.hourlysteps.domain.UserActivity
 import com.hourlysteps.domain.VibrationStrength
 import com.hourlysteps.reminder.Attention
@@ -43,6 +45,7 @@ class CelebrationManager(
     private val settingsRepository: SettingsRepository,
     private val stepsRepository: StepsRepository,
     private val activityStore: ActivityStore,
+    private val streakRepository: StreakRepository,
     private val reminderNotifier: ReminderNotifier,
     private val clock: Clock,
     private val isUiVisible: () -> Boolean,
@@ -61,18 +64,40 @@ class CelebrationManager(
         // Celebrate during a workout, but never wake someone up to do it.
         if (settings.skipWhileAsleep && activityStore.currentAt(now.toInstant().toEpochMilli()) == UserActivity.ASLEEP) return
         val plan = settings.schedule.planFor(date.dayOfWeek) ?: return
-        val slot = Slots.at(settings.schedule, now) ?: return
+        val slot = Slots.at(settings.schedule, now)
+        val total = stepsRepository.dayTotal(date)
+        val inSlot = slot?.let { stepsRepository.stepsInSlot(it) } ?: 0
 
-        val key = "$date#${slot.startMinute}"
-        val celebration = CelebrationDecider.decide(
+        val slotKey = slot?.let { "$date#${it.startMinute}" }
+        val hourly = slot?.let {
+            CelebrationDecider.decide(
+                settings = settings,
+                plan = plan,
+                stepsInSlot = inSlot,
+                todayTotal = total,
+                alreadyCelebratedThisSlot = prefs.getString(KEY_LAST_SLOT, null) == slotKey,
+            )
+        }
+        val daily = CelebrationDecider.decideDaily(
             settings = settings,
             plan = plan,
-            stepsInSlot = stepsRepository.stepsInSlot(slot),
-            todayTotal = stepsRepository.dayTotal(date),
-            alreadyCelebratedThisSlot = prefs.getString(KEY_LAST_SLOT, null) == key,
-        ) ?: return
-        prefs.edit { putString(KEY_LAST_SLOT, key) }
-        celebrate(celebration)
+            stepsInSlot = inSlot,
+            todayTotal = total,
+            alreadyCelebratedToday = prefs.getString(KEY_LAST_DAY, null) == date.toString(),
+        )
+
+        // When both goals fall in the same batch, the daily moment is the one to show.
+        if (daily != null) {
+            prefs.edit {
+                putString(KEY_LAST_DAY, date.toString())
+                if (hourly != null) putString(KEY_LAST_SLOT, slotKey)
+            }
+            streakRepository.finalizePastDays()
+            celebrate(daily.copy(streak = streakRepository.current().current))
+        } else if (hourly != null) {
+            prefs.edit { putString(KEY_LAST_SLOT, slotKey) }
+            celebrate(hourly)
+        }
     }
 
     // NEW_TASK is required to start an activity from the application context; the activity is
@@ -117,9 +142,17 @@ class CelebrationManager(
             when (celebration.kind) {
                 CelebrationKind.HOURLY_GOAL -> R.string.celebration_hourly_title
                 CelebrationKind.INACTIVITY_GOAL -> R.string.celebration_inactivity_title
+                CelebrationKind.DAILY_GOAL -> R.string.celebration_daily_title
             },
         )
-        val text = context.getString(R.string.celebration_steps_this_hour, formatSteps(celebration.stepsThisHour))
+        val text = if (celebration.kind == CelebrationKind.DAILY_GOAL) {
+            listOfNotNull(
+                context.getString(R.string.celebration_steps_today, formatSteps(celebration.todayTotal)),
+                Streaks.line(celebration.streak),
+            ).joinToString(" · ")
+        } else {
+            context.getString(R.string.celebration_steps_this_hour, formatSteps(celebration.stepsThisHour))
+        }
         val builder = NotificationCompat.Builder(context, ReminderNotifier.channelId(ReminderNotifier.CHANNEL_CELEBRATION, strength))
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
@@ -139,6 +172,7 @@ class CelebrationManager(
         const val NOTIFICATION_ID = 1002
         private const val REQUEST_CODE = 2
         private const val KEY_LAST_SLOT = "last_celebrated_slot"
+        private const val KEY_LAST_DAY = "last_celebrated_day"
         private const val NOTIFICATION_TIMEOUT_MS = 10 * 60 * 1000L
     }
 }
