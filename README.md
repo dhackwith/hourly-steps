@@ -5,7 +5,9 @@ hour, at :50, when you are short of an hourly step goal derived from your daily 
 different rhythm? Reminders can also come every 30 minutes or every 2 hours.
 
 - Default: 7,000 steps/day over 12 reminders (8:50 AM – 7:50 PM) = 584 steps/hour.
-- When behind pace, the reminder adds the catch-up rate: `312 more steps this hour (660/hr to catch up today)`.
+- The reminder opens a **Pace check** screen: `312 left this hour`, a bar for the hour, and a bar for
+  today with a tick where you should be by the end of this hour, plus `1,197 behind pace`. It follows
+  your steps while open and closes itself once the hour's goal is met.
 - Once the daily goal is met, goal reminders stop. Optional **Inactivity reminders** keep checking
   against a smaller per-hour threshold (default 250). The threshold is a rate, so every 30 minutes
   it asks for half as much and every 2 hours for twice as much.
@@ -131,9 +133,9 @@ check could see as little as 15 minutes of walking.
 
 Checklist for reminder changes, because each of these behaves differently on Wear OS:
 
-- **App open:** no pop-up appears, but the watch should vibrate.
-- **Watch face showing:** the alert pops up and the channel pattern plays.
-- **Screen asleep:** the screen wakes, then the alert pops up and the channel pattern plays.
+- **App open:** the Pace check screen opens straight away and the watch vibrates.
+- **Watch face showing:** the alert pops up and the channel pattern plays. **See pace** opens Pace check.
+- **Screen asleep:** the screen wakes, then the alert pops up and the channel pattern plays. **See pace** opens Pace check.
 - **Do Not Disturb on:** the screen stays asleep and nothing buzzes.
 
 To sleep the screen and jump the clock to just before a check:
@@ -179,7 +181,7 @@ real watch, add the tile from the tile list and pick complications in the watch 
 |---|---|
 | `domain` | Pure logic: themes, schedule and slots, goal maths, catch-up pace, check decision, next-alarm time, day status, today summary, wording for each interval. Fully unit-tested. |
 | `data` | Settings (DataStore), raw step points and check log (Room), Health Services passive listener. |
-| `reminder` | Exact-alarm chain, the slot check, notifications and vibration, reschedule on boot/time change. |
+| `reminder` | Exact-alarm chain, the slot check, notifications and vibration, the Pace check screen, reschedule on boot/time change. |
 | `celebration` | Goal celebration trigger, fireworks screen. |
 | `surfaces` | Tile, complications, and the ring and complication text they share with Home. |
 | `ui` | Compose for Wear OS Material 3: Home rings, Today page, Settings, plan and week editors, pause, theme picker, pickers, permissions. |

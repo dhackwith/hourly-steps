@@ -1,10 +1,13 @@
 package com.hourlysteps.surfaces
 
 import com.hourlysteps.domain.DayStatus
+import com.hourlysteps.domain.CheckMode
 import com.hourlysteps.domain.DayStatusKind
+import com.hourlysteps.domain.Pace
 import com.hourlysteps.domain.Settings
 import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.ui.formatNextCheck
+import com.hourlysteps.ui.formatPaceLine
 import com.hourlysteps.ui.formatPauseEnd
 import com.hourlysteps.ui.formatSteps
 
@@ -62,6 +65,39 @@ fun ringContent(status: DayStatus): RingContent {
             catchUpLine = status.catchUpPerSlot?.let { "${formatSteps(it)}${SlotWording.perSlotShort(status.slotLength)} to catch up" },
         )
     }
+}
+
+/** The Pace check reminder screen. */
+data class PaceCheckContent(
+    val left: String,
+    val caption: String,
+    val slotProgress: Float,
+    val todayLine: String,
+    val todayProgress: Float,
+    /** Where pace falls along the today bar, or null once the daily goal is met. */
+    val paceMarker: Float?,
+    val paceLine: String,
+    val goalMet: Boolean,
+)
+
+/** Null when there is nothing left to remind about, so an open reminder screen should close. */
+fun paceCheckContent(status: DayStatus): PaceCheckContent? {
+    val slot = status.slot ?: return null
+    val dailyGoal = status.dailyGoal ?: return null
+    val left = status.slotTarget - status.stepsInSlot
+    if (status.kind != DayStatusKind.ACTIVE || status.mode == CheckMode.OFF || left <= 0) return null
+
+    val goalMet = status.mode == CheckMode.INACTIVITY
+    return PaceCheckContent(
+        left = formatSteps(left),
+        caption = "left ${SlotWording.current(slot.lengthMinutes)}",
+        slotProgress = status.slotProgress,
+        todayLine = "Today ${formatSteps(status.todayTotal)} of ${formatSteps(dailyGoal)}",
+        todayProgress = status.todayProgress,
+        paceMarker = if (goalMet) null else Pace.target(dailyGoal, slot).toFloat() / dailyGoal.coerceAtLeast(1),
+        paceLine = if (goalMet) "Daily goal met" else formatPaceLine(Pace.gap(dailyGoal, slot, status.todayTotal)),
+        goalMet = goalMet,
+    )
 }
 
 /** Text and range for a watch-face complication. */

@@ -47,11 +47,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        container.uiVisible = true
+        container.onScreenStarted()
     }
 
     override fun onStop() {
-        container.uiVisible = false
+        container.onScreenStopped()
         super.onStop()
     }
 

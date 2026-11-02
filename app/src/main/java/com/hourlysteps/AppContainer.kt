@@ -27,6 +27,7 @@ import com.hourlysteps.surfaces.SurfaceUpdater
 import java.time.Clock
 import java.time.LocalDate
 import java.time.ZonedDateTime
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -53,7 +54,7 @@ class AppContainer(private val context: Context) {
     val surfaceUpdater = SurfaceUpdater(context)
     val activityStore = ActivityStore(context)
     val streakRepository = StreakRepository(database.daySummaryDao(), stepsRepository, settingsRepository, clock)
-    val reminderNotifier = ReminderNotifier(context, settingsRepository, stepsRepository, clock)
+    val reminderNotifier = ReminderNotifier(context, settingsRepository, stepsRepository, clock, isUiVisible = { uiVisible })
     val reminderScheduler = ReminderScheduler(context, settingsRepository, clock)
     val reminderCheck = ReminderCheck(
         context = context,
@@ -74,9 +75,19 @@ class AppContainer(private val context: Context) {
             rows.map { CheckRecord(it.timeMillis, it.slotStartMinute, it.stepsInSlot, it.notified, it.skippedReason, it.isFollowUp) }
         }
 
-    /** True while one of the app's screens is in the foreground; set by [com.hourlysteps.ui.MainActivity]. */
-    @Volatile
-    var uiVisible: Boolean = false
+    private val startedScreens = AtomicInteger(0)
+
+    /** True while one of the app's screens is in the foreground. */
+    val uiVisible: Boolean get() = startedScreens.get() > 0
+
+    /** A count rather than a flag: one screen starts before the one beneath it stops. */
+    fun onScreenStarted() {
+        startedScreens.incrementAndGet()
+    }
+
+    fun onScreenStopped() {
+        startedScreens.decrementAndGet()
+    }
 
     val celebrationManager = CelebrationManager(
         context = context,

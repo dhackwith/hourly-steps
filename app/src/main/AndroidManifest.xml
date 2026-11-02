@@ -45,6 +45,15 @@
             android:taskAffinity="com.hourlysteps.celebration"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
 
+        <activity
+            android:name=".reminder.ReminderActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleTop"
+            android:taskAffinity="com.hourlysteps.reminder"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
+
         <service
             android:name=".data.steps.StepsPassiveListenerService"
             android:exported="true"

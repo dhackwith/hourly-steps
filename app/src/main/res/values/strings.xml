@@ -19,11 +19,12 @@
     <string name="complication_today_label">Hourly Steps: today</string>
 
     <string name="notif_title">Time to move</string>
+    <string name="notif_action_see_pace">See pace</string>
     <string name="notif_action_snooze">Snooze 5 min</string>
     <string name="notif_action_pause_today">Pause today</string>
     <plurals name="notif_more_steps">
         <item quantity="one">%1$s more step %2$s</item>
         <item quantity="other">%1$s more steps %2$s</item>
     </plurals>
-    <string name="notif_catch_up">(%1$s%2$s to catch up today)</string>
+    <string name="notif_pace">%1$s today</string>
 </resources>

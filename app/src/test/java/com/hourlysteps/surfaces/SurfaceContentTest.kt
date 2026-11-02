@@ -214,4 +214,47 @@ class SurfaceContentTest {
         assertEquals("292 of 292 this half hour", slotComplication(status(s = withInterval(30))).longText)
         assertEquals("292 of 1,167 these two hours", slotComplication(status(s = withInterval(120))).longText)
     }
+
+
+    @Test
+    fun `the pace check shows what's left and how the day stands`() {
+        val c = paceCheckContent(status(hour = 12, inSlot = 272, total = 1720))!!
+        assertEquals("312", c.left)
+        assertEquals("left this hour", c.caption)
+        assertEquals(272f / 584, c.slotProgress, 0.001f)
+        assertEquals("Today 1,720 of 7,000", c.todayLine)
+        assertEquals(1720f / 7000, c.todayProgress, 0.001f)
+        assertEquals(2917f / 7000, c.paceMarker!!, 0.001f)
+        assertEquals("1,197 behind pace", c.paceLine)
+    }
+
+    @Test
+    fun `the pace check says when you're ahead`() {
+        assertEquals("583 ahead of pace", paceCheckContent(status(hour = 12, inSlot = 100, total = 3500))!!.paceLine)
+    }
+
+    @Test
+    fun `the pace check names the interval`() {
+        assertEquals("left this half hour", paceCheckContent(status(inSlot = 10, s = withInterval(30)))!!.caption)
+        assertEquals("left these two hours", paceCheckContent(status(inSlot = 10, s = withInterval(120)))!!.caption)
+    }
+
+    @Test
+    fun `the pace check after the daily goal shows the inactivity share with no pace`() {
+        val s = withInterval(30).copy(inactivityEnabled = true)
+        val c = paceCheckContent(status(inSlot = 25, total = 8000, s = s))!!
+        assertEquals("100", c.left)
+        assertEquals("Daily goal met", c.paceLine)
+        assertNull(c.paceMarker)
+        assertTrue(c.goalMet)
+    }
+
+    @Test
+    fun `the pace check has nothing to show once the reminder no longer applies`() {
+        assertNull(paceCheckContent(status(inSlot = 584, total = 2000))) // slot goal reached
+        assertNull(paceCheckContent(status(inSlot = 10, total = 7000))) // daily goal met, inactivity off
+        assertNull(paceCheckContent(status(hour = 22))) // outside the window
+        assertNull(paceCheckContent(status(s = allOff)))
+        assertNull(paceCheckContent(status(s = settings.copy(pausedThrough = day))))
+    }
 }

@@ -125,4 +125,12 @@ class FormatTest {
         val plan = com.hourlysteps.domain.DayPlan(startMinute = 8 * 60, endMinute = 9 * 60)
         assertEquals("1 reminder · ≈ 7,000 steps per hour", formatPlanCaption(plan, 60))
     }
+
+
+    @Test
+    fun `the pace line reads naturally`() {
+        assertEquals("1,197 behind pace", formatPaceLine(-1197))
+        assertEquals("On pace", formatPaceLine(0))
+        assertEquals("583 ahead of pace", formatPaceLine(583))
+    }
 }

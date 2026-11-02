@@ -117,7 +117,7 @@ class ReminderCheck(
         }
 
         if (isFollowUp && result == CheckResult.None) notifier.cancel()
-        notifier.show(result, settings, slot, now)
+        notifier.show(result, settings, plan, slot, now, todayTotal)
         val label = if (isFollowUp) "Follow-up" else "Check"
         Log.i(TAG, "$label at $reference: slot=$stepsInSlot total=$todayTotal -> $result skipped=$skippedReason")
 
