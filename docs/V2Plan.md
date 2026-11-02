@@ -195,7 +195,7 @@ All three read one `DayStatus`, computed in one place, so they never disagree.
   rings page draws its own dots above it.
 - **Today page:** one row per slot: time, steps / goal, and a status glyph:
   ✓ hit · ✗ short · – skipped or daily goal already met · • running now. A skipped row names the
-  reason inline (charging, late, paused, not checked), which is quicker on a watch than tapping
+  reason inline (charging, late, paused, no check), which is quicker on a watch than tapping
   it. Upcoming slots show their goal. Rows come from `step_points` joined with `check_log`.
 - A slot that started with the daily goal already met is not counted as short, since no reminder
   applied.

@@ -52,7 +52,7 @@ data class TodaySummary(
     val slotsTotal: Int get() = rows.size
 
     companion object {
-        const val REASON_NOT_CHECKED = "not checked"
+        const val REASON_NOT_CHECKED = "no check"
         const val REASON_PAUSED = "paused"
 
         fun compute(

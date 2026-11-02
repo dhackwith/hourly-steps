@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
@@ -109,6 +110,8 @@ private fun SlotRowItem(row: SlotRow) {
             color = if (current) mainColor else colors.onSurfaceVariant,
             modifier = Modifier.weight(1f),
             maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
         )
         Text(glyph(row.outcome), style = MaterialTheme.typography.labelMedium, color = glyphColor(row.outcome))
     }
