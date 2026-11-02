@@ -92,7 +92,7 @@ fun HomeContent(status: DayStatus, pagerState: PagerState, onResume: () -> Unit,
             content.todayLine?.let {
                 Text(it, style = MaterialTheme.typography.labelSmall, color = todayColor, textAlign = TextAlign.Center)
             }
-            content.catchUpLine?.let {
+            content.paceLine?.let {
                 Text(it, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
             }
             content.detailLine?.let {

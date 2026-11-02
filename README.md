@@ -6,8 +6,8 @@ different rhythm? Reminders can also come every 30 minutes or every 2 hours.
 
 - Default: 7,000 steps/day over 12 reminders (8:50 AM – 7:50 PM) = 584 steps/hour.
 - The reminder opens a **Pace check** screen: `312 left this hour`, a bar for the hour, and a bar for
-  today with a tick where you should be by the end of this hour, plus `1,197 behind pace`. It follows
-  your steps while open and closes itself once the hour's goal is met.
+  today with a tick where you should be by now, plus `1,100 behind pace`. It follows your steps
+  while open and closes itself once the hour's goal is met. Home and the tile show the same pace line.
 - Once the daily goal is met, goal reminders stop. Optional **Inactivity reminders** keep checking
   against a smaller per-hour threshold (default 250). The threshold is a rate, so every 30 minutes
   it asks for half as much and every 2 hours for twice as much.
@@ -179,7 +179,7 @@ real watch, add the tile from the tile list and pick complications in the watch 
 
 | Package | Role |
 |---|---|
-| `domain` | Pure logic: themes, schedule and slots, goal maths, catch-up pace, check decision, next-alarm time, day status, today summary, wording for each interval. Fully unit-tested. |
+| `domain` | Pure logic: themes, schedule and slots, goal maths, pace, check decision, next-alarm time, day status, today summary, wording for each interval. Fully unit-tested. |
 | `data` | Settings (DataStore), raw step points and check log (Room), Health Services passive listener. |
 | `reminder` | Exact-alarm chain, the slot check, notifications and vibration, the Pace check screen, reschedule on boot/time change. |
 | `celebration` | Goal celebration trigger, fireworks screen. |

@@ -59,13 +59,24 @@ class SurfaceContentTest {
     }
 
     @Test
-    fun `behind pace adds the catch up line`() {
-        assertEquals("660/hr to catch up", ringContent(status(hour = 10, total = 400)).catchUpLine)
+    fun `behind pace is shown on the rings`() {
+        assertEquals("962 behind pace", ringContent(status(hour = 10, total = 400)).paceLine)
     }
 
     @Test
-    fun `ahead of pace has no catch up line`() {
-        assertNull(ringContent(status()).catchUpLine)
+    fun `ahead of pace is shown on the rings`() {
+        assertEquals("2,138 ahead of pace", ringContent(status()).paceLine)
+    }
+
+    @Test
+    fun `the rings and the reminder always agree on pace`() {
+        val st = status(hour = 12, inSlot = 272, total = 1720)
+        assertEquals(paceCheckContent(st)!!.paceLine, ringContent(st).paceLine)
+    }
+
+    @Test
+    fun `there is no pace line once the daily goal is met`() {
+        assertNull(ringContent(status(total = 7000, s = settings.copy(inactivityEnabled = true))).paceLine)
     }
 
     @Test
@@ -193,14 +204,14 @@ class SurfaceContentTest {
     fun `the slot caption names the half hour`() {
         val c = ringContent(status(total = 400, s = withInterval(30)))
         assertEquals("of 292 this half hour", c.valueCaption)
-        assertEquals("330/30 min to catch up", c.catchUpLine)
+        assertEquals("962 behind pace", c.paceLine)
     }
 
     @Test
     fun `the slot caption names the two hours`() {
         val c = ringContent(status(total = 400, s = withInterval(120)))
         assertEquals("of 1,167 these two hours", c.valueCaption)
-        assertEquals("1,320/2 hr to catch up", c.catchUpLine)
+        assertEquals("962 behind pace", c.paceLine)
     }
 
     @Test
@@ -224,13 +235,13 @@ class SurfaceContentTest {
         assertEquals(272f / 584, c.slotProgress, 0.001f)
         assertEquals("Today 1,720 of 7,000", c.todayLine)
         assertEquals(1720f / 7000, c.todayProgress, 0.001f)
-        assertEquals(2917f / 7000, c.paceMarker!!, 0.001f)
-        assertEquals("1,197 behind pace", c.paceLine)
+        assertEquals(2528f / 7000, c.paceMarker!!, 0.001f)
+        assertEquals("808 behind pace", c.paceLine)
     }
 
     @Test
     fun `the pace check says when you're ahead`() {
-        assertEquals("583 ahead of pace", paceCheckContent(status(hour = 12, inSlot = 100, total = 3500))!!.paceLine)
+        assertEquals("972 ahead of pace", paceCheckContent(status(hour = 12, inSlot = 100, total = 3500))!!.paceLine)
     }
 
     @Test

@@ -121,7 +121,7 @@ class HourlyStepsTileService : TileService() {
             column.addContent(text(it, 12f, if (content.captionIsSlot) slotColor else RingColors.TEXT_DIM))
         }
         content.todayLine?.let { column.addContent(text(it, 12f, outerColor)) }
-        (content.catchUpLine ?: content.detailLine)?.let { column.addContent(text(it, 11f, RingColors.TEXT_DIM)) }
+        (content.paceLine ?: content.detailLine)?.let { column.addContent(text(it, 11f, RingColors.TEXT_DIM)) }
         return column.build()
     }
 

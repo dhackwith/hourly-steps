@@ -3,7 +3,6 @@ package com.hourlysteps.surfaces
 import com.hourlysteps.domain.DayStatus
 import com.hourlysteps.domain.CheckMode
 import com.hourlysteps.domain.DayStatusKind
-import com.hourlysteps.domain.Pace
 import com.hourlysteps.domain.Settings
 import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.ui.formatNextCheck
@@ -24,7 +23,7 @@ data class RingContent(
     /** True when the caption describes the slot, so it takes the inner ring's colour. */
     val captionIsSlot: Boolean,
     val todayLine: String?,
-    val catchUpLine: String?,
+    val paceLine: String?,
     val detailLine: String?,
 )
 
@@ -42,7 +41,7 @@ fun ringContent(status: DayStatus): RingContent {
         valueCaption = "steps today",
         captionIsSlot = false,
         todayLine = null,
-        catchUpLine = null,
+        paceLine = null,
         detailLine = nextCheck,
     )
     return when {
@@ -62,7 +61,7 @@ fun ringContent(status: DayStatus): RingContent {
             valueCaption = "of ${formatSteps(status.slotTarget)} ${SlotWording.current(status.slotLength)}",
             captionIsSlot = true,
             todayLine = status.dailyGoal?.let { "Today $total / ${formatSteps(it)}" },
-            catchUpLine = status.catchUpPerSlot?.let { "${formatSteps(it)}${SlotWording.perSlotShort(status.slotLength)} to catch up" },
+            paceLine = status.paceGap?.let(::formatPaceLine),
         )
     }
 }
@@ -94,8 +93,8 @@ fun paceCheckContent(status: DayStatus): PaceCheckContent? {
         slotProgress = status.slotProgress,
         todayLine = "Today ${formatSteps(status.todayTotal)} of ${formatSteps(dailyGoal)}",
         todayProgress = status.todayProgress,
-        paceMarker = if (goalMet) null else Pace.target(dailyGoal, slot).toFloat() / dailyGoal.coerceAtLeast(1),
-        paceLine = if (goalMet) "Daily goal met" else formatPaceLine(Pace.gap(dailyGoal, slot, status.todayTotal)),
+        paceMarker = status.paceTarget?.let { it.toFloat() / dailyGoal.coerceAtLeast(1) },
+        paceLine = status.paceGap?.let(::formatPaceLine) ?: "Daily goal met",
         goalMet = goalMet,
     )
 }

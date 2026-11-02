@@ -55,7 +55,7 @@ private fun formatReminderCount(plan: DayPlan, slotMinutes: Int): String {
     return if (count == 1) "1 reminder" else "$count reminders"
 }
 
-/** "1,197 behind pace", "On pace" or "580 ahead of pace", from steps ahead of pace. */
+/** "1,100 behind pace", "On pace" or "580 ahead of pace", from steps ahead of pace. */
 fun formatPaceLine(gap: Int): String = when {
     gap < 0 -> "${formatSteps(-gap)} behind pace"
     gap > 0 -> "${formatSteps(gap)} ahead of pace"

@@ -25,12 +25,15 @@ data class DayStatus(
     val mode: CheckMode,
     /** What this slot is measured against: the slot goal, or the inactivity threshold once the daily goal is met. */
     val slotTarget: Int,
-    /** Steps per slot to still reach the daily goal; only set when it exceeds the slot goal. */
-    val catchUpPerSlot: Int?,
+    /** Steps to have by now to be on track; only set inside a slot while the daily goal is still open. */
+    val paceTarget: Int?,
     val nextCheck: ZonedDateTime?,
     val pausedThrough: LocalDate?,
 ) {
     val dailyGoalMet: Boolean get() = dailyGoal != null && todayTotal >= dailyGoal
+
+    /** Steps ahead of pace, or negative when behind. */
+    val paceGap: Int? get() = paceTarget?.let { todayTotal - it }
 
     /** Goal met and nothing left to do today. Outside the window no checks run, so inactivity reminders don't matter. */
     val finished: Boolean
@@ -60,8 +63,8 @@ data class DayStatus(
             }
             val mode = plan?.let { CheckDecider.modeFor(settings, it, todayTotal) } ?: CheckMode.OFF
             val slotGoal = plan?.let { GoalCalculator.slotGoal(it, slotMinutes) } ?: 0
-            val catchUp = if (kind == DayStatusKind.ACTIVE && mode == CheckMode.GOAL && plan != null) {
-                GoalCalculator.catchUpPerSlot(plan, slotMinutes, todayTotal, Slots.minuteOfDay(now))?.takeIf { it > slotGoal }
+            val paceTarget = if (kind == DayStatusKind.ACTIVE && mode == CheckMode.GOAL && plan != null && slot != null) {
+                Pace.target(plan.dailyGoal, slot, Slots.minuteOfDay(now))
             } else {
                 null
             }
@@ -78,7 +81,7 @@ data class DayStatus(
                 } else {
                     slotGoal
                 },
-                catchUpPerSlot = catchUp,
+                paceTarget = paceTarget,
                 nextCheck = ReminderSchedule.nextCheckTime(now, settings),
                 pausedThrough = settings.pausedThrough,
             )

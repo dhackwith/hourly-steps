@@ -89,7 +89,7 @@ class ReminderNotifier(
                 CHANNEL_GOAL,
                 moreStepsText(result.need, slotMinutes),
                 if (plan != null && slot != null) {
-                    context.getString(R.string.notif_pace, formatPaceLine(Pace.gap(plan.dailyGoal, slot, todayTotal)))
+                    context.getString(R.string.notif_pace, formatPaceLine(Pace.gap(plan.dailyGoal, slot, Slots.minuteOfDay(now), todayTotal)))
                 } else {
                     null
                 },
