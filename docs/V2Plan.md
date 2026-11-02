@@ -7,7 +7,7 @@ feature branch, compiled and unit-tested before commit, and verified on the Wear
 | # | Feature | Phase |
 |---|---|---|
 | 0 | Fix: reminder when the screen is asleep | A |
-| 2 | Reminder days, with separate weekday and weekend plans | A |
+| 2 | Reminder days, each assigned to one of two plans or off | A |
 | 8 | Different daily goals per plan | A |
 | 3 | Pause reminders | A |
 | 11 | Reminder interval (30 / 60 / 120 min) | A (model), E (UI) |
@@ -51,23 +51,29 @@ data class DayPlan(
     val windowEnd: LocalTime = LocalTime.of(20, 0),    // last slot ends
 )
 
+enum class DayAssignment { PLAN_A, PLAN_B, OFF }
+
 data class Schedule(
-    val mode: ScheduleMode = ScheduleMode.EVERY_DAY,   // EVERY_DAY | WEEKDAYS_WEEKEND
-    val weekday: DayPlan = DayPlan(),
-    val weekend: DayPlan = DayPlan(),                  // used only in WEEKDAYS_WEEKEND
-    val days: Set<DayOfWeek> = DayOfWeek.entries.toSet(),
+    val mode: ScheduleMode = ScheduleMode.EVERY_DAY,   // EVERY_DAY | TWO_PLANS
+    val planA: DayPlan = DayPlan(),                    // the only plan in EVERY_DAY mode
+    val planB: DayPlan = DayPlan(),
+    val assignments: Map<DayOfWeek, DayAssignment> = DayOfWeek.entries.associateWith { PLAN_A },
     val slotMinutes: Int = 60,                         // 30 | 60 | 120
 ) {
     fun planFor(day: DayOfWeek): DayPlan?             // null when the day is off
 }
 ```
 
+- **Any week shape.** Weeks are not assumed to be Monday to Friday plus a weekend. In
+  TWO_PLANS mode each day of the week is assigned to Plan A, Plan B, or Off, so a
+  Thursday-to-Sunday worker, a three-days-off week, or alternating days all work. In EVERY_DAY
+  mode every day uses Plan A and days can only be toggled on or off.
 - **Slots.** A day's slots are `windowStart`, `windowStart + slotMinutes`, … while
   `slotEnd <= windowEnd`. The default window 8:00 → 20:00 with 60-minute slots is the same 12
   slots as v1 (checks at 8:50 … 19:50). The check fires at `slotEnd − lead`, where lead is a
   sixth of the slot: 5 min for 30, 10 min for 60, 20 min for 120.
-- **Slot goal** = `ceil(dailyGoal / slotCount)`, per plan. The weekday and weekend plans can
-  have different goals (feature 8) and different hours (feature 2).
+- **Slot goal** = `ceil(dailyGoal / slotCount)`, per plan. The two plans can have different
+  goals (feature 8) and different hours (feature 2).
 - **Days off** (feature 2): no checks, no celebrations, and the Home ring shows "Day off".
   Days off are streak-neutral (see feature 7).
 - **Window must not cross midnight.** Night-shift windows stay out of scope; the model allows
@@ -78,15 +84,14 @@ data class Schedule(
 
 ```
 Goal & schedule
-  Daily goal ............ 7,000            (hidden when mode = weekdays/weekend)
-  Schedule .............. Every day / Weekdays & weekend
-  Weekdays .............. 7,000 · 8:50 AM–7:50 PM    (opens plan editor)
-  Weekend ............... 5,000 · 9:50 AM–5:50 PM    (opens plan editor)
-  Reminder days ......... Mon–Fri, Sun               (7 toggle chips)
+  Schedule .............. Every day / Two plans
+  Plan A ................ 7,000 · 8:50 AM–7:50 PM    (opens plan editor; the only plan in Every day mode)
+  Plan B ................ 5,000 · 9:50 AM–5:50 PM    (opens plan editor; Two plans mode only)
+  Week .................. A A A A A B Off            (opens the week editor)
   Reminder interval ..... Every hour                 (Phase E; hidden until then)
 Reminders
   Pause reminders ....... Off / Paused until Mon
-  Second nudge .......... On                          (Phase C)
+  Second nudge .......... Off                         (Phase C)
   Skip during workouts .. On                          (Phase C)
   Skip while asleep ..... On                          (Phase C)
   Skip while charging ... On
@@ -101,8 +106,14 @@ Debug (debug builds)
 The plan editor is one screen: Daily goal, First reminder, Last reminder, with the live
 "12 reminders · ≈ 584 steps/hour" caption.
 
+The week editor is a row of seven day chips (Mon … Sun, starting on the locale's first day of
+the week). In Two plans mode a tap cycles each chip A → B → Off, with the chip coloured by
+plan; in Every day mode a tap toggles On → Off. A caption underneath summarises the result,
+for example "Plan A: Thu–Sun · Plan B: Mon–Tue · Off: Wed". Plan names are fixed ("Plan A",
+"Plan B") in this version; renaming can come later.
+
 **Storage.** Settings stay in Preferences DataStore with new keys; old keys migrate on first
-read (old `dailyGoal`/`firstHour`/`lastHour` become the weekday plan, mode EVERY_DAY).
+read (old `dailyGoal`/`firstHour`/`lastHour` become Plan A, mode EVERY_DAY, all days on).
 
 **Step storage.** Replace the hourly buckets with raw interval points so any slot length can
 be summed:
@@ -131,10 +142,10 @@ skipping days off and paused days. `CheckDecider` and `CelebrationDecider` take 
 - **Streaks:** paused days are neutral, like days off (feature 7).
 - **Quick access:** a "Pause today" action on the reminder notification (Phase C, with snooze).
 
-**Tests.** Slot generation for 30/60/120 with the default and odd windows; weekday vs weekend
-plan selection; days off and paused days skipped by `nextCheckTime`, including a pause that
-spans a weekend; DST transitions with 30-minute slots; migration of hourly rows to points;
-settings key migration.
+**Tests.** Slot generation for 30/60/120 with the default and odd windows; plan selection per
+day for an irregular week (e.g. A A Off B B A Off); days off and paused days skipped by
+`nextCheckTime`, including a pause that spans several days off; DST transitions with
+30-minute slots; migration of hourly rows to points; settings key migration.
 
 ---
 
@@ -144,8 +155,14 @@ settings key migration.
 
 **Tile** (`androidx.wear.tiles` 1.6.2 + `protolayout-material3` 1.4.2, both fine on API 36):
 
-- Layout: progress arc for this slot, big step count, "of 584", "Today 3,100 / 7,000", and the
-  catch-up line when behind. States: goal met (full arc, "Goal met"), day off, paused.
+- Layout: two concentric progress arcs in different colours. The outer arc is **today** (total
+  against the daily goal, primary colour); the inner arc is **this slot** (steps against the
+  slot goal, secondary colour). Centre: the slot's step count large, "of 584" below it, then
+  "Today 3,100 / 7,000" and the catch-up line when behind. A small legend dot next to each
+  caption uses the matching arc colour so the two rings are never confused. States: slot goal
+  met (inner arc full, tinted tertiary), daily goal met (outer arc full, tertiary, centre text
+  switches to today's total), day off, paused.
+- The Home ring gains the same outer "today" arc so the app and the tile match.
 - Tap anywhere opens the app. A second tap target on "Paused" resumes.
 - Freshness: `setFreshnessIntervalMillis(5 min)` plus `TileService.getUpdater().requestUpdate()`
   after each step batch, throttled to once a minute, and at slot boundaries.
@@ -154,7 +171,9 @@ settings key migration.
 **Complication** (`watchface-complications-data-source-ktx` 1.3.0):
 
 - Types: `RANGED_VALUE` (this slot's progress, text "412"), `SHORT_TEXT` ("412/584"),
-  `LONG_TEXT` ("412 of 584 this hour · 3,100 today").
+  `LONG_TEXT` ("412 of 584 this hour · 3,100 today"). Complication slots are too small for
+  two rings; a second data source, "Hourly Steps · Today", offers today's total as
+  `RANGED_VALUE` so a watch face can show both side by side.
 - Tap opens the app. Update via `ComplicationDataSourceUpdateRequester.requestUpdateAll()` after
   step batches (throttled) and at slot boundaries; the manifest declares a 60-second update
   period as the fallback.
@@ -197,7 +216,7 @@ Both read the same `SlotStatus` snapshot the Home screen uses, computed by a sma
 
 ### 6. Snooze and a second nudge
 
-- **Second nudge** (setting, default on): after a shortfall at `slotEnd − lead`, arm a
+- **Second nudge** (setting, default off): after a shortfall at `slotEnd − lead`, arm a
   follow-up at `slotEnd − lead/2` (:55 for hourly slots). It re-reads steps; still short →
   vibrate again and update the notification text; met → cancel. Uses `setAlarmClock` so it is
   not subject to Doze's nine-minute spacing for exact alarms. Never fires after the slot ends.
@@ -269,11 +288,13 @@ The model from Phase A already supports it; this phase exposes it.
 - **Docs:** README gets the new emulator checklist (asleep-screen reminder, sleep broadcasts,
   tile and complication setup); HourlyStepsPlan.md gets a pointer to this file.
 
-## Decisions to confirm before Phase A
+## Decisions (confirmed)
 
-1. **Weekday / weekend only, or full per-day editing?** The model stores seven plans either
-   way; the UI proposal is two plans plus day toggles. Full per-day editing can come later.
-2. **Interval options:** 30 / 60 / 120 minutes. Anything else (45, 90)?
-3. **Streak rule:** a missed counted day resets to zero (no automatic grace day).
-4. **Second nudge default:** on.
-5. **Tile content:** this slot's ring only, or should it also show today's total ring?
+1. **Week shape:** each day is assigned to Plan A, Plan B, or Off. No Monday-to-Friday
+   assumption; a four-on / three-off week is a first-class case.
+2. **Interval options:** 30 / 60 / 120 minutes.
+3. **Streak rule:** a missed counted day resets to zero, no automatic grace day. Days off and
+   paused days are neutral.
+4. **Second nudge:** off by default.
+5. **Tile:** two rings in different colours, today's total outside and this slot inside; the
+   Home screen gets the same pair.
