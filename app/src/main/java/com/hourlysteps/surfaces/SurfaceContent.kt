@@ -106,6 +106,11 @@ data class ComplicationContent(
     val shortText: String,
     val shortTitle: String?,
     val longText: String,
+    /**
+     * Below zero by the steps past [max]. The system rejects a value above max, so this carries the
+     * true count, value - min, for our watch face to add live steps to. A ring still draws full.
+     */
+    val min: Float = 0f,
 )
 
 private fun unavailable(text: String) = ComplicationContent(0f, 1f, text, null, text)
@@ -124,6 +129,7 @@ fun slotComplication(status: DayStatus): ComplicationContent {
     val target = formatSteps(status.slotTarget)
     return ComplicationContent(
         value = status.stepsInSlot.coerceAtMost(status.slotTarget).toFloat(),
+        min = (status.slotTarget - status.stepsInSlot).coerceAtMost(0).toFloat(),
         max = status.slotTarget.coerceAtLeast(1).toFloat(),
         shortText = steps,
         shortTitle = "of $target",
@@ -138,6 +144,7 @@ fun todayComplication(status: DayStatus): ComplicationContent {
     val total = formatSteps(status.todayTotal)
     return ComplicationContent(
         value = status.todayTotal.coerceAtMost(goal).toFloat(),
+        min = (goal - status.todayTotal).coerceAtMost(0).toFloat(),
         max = goal.coerceAtLeast(1).toFloat(),
         shortText = total,
         shortTitle = "today",

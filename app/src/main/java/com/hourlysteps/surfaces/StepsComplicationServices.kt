@@ -37,7 +37,7 @@ abstract class StepsComplicationService : SuspendingComplicationDataSourceServic
         )
         return when (type) {
             ComplicationType.RANGED_VALUE ->
-                RangedValueComplicationData.Builder(content.value, 0f, content.max, description)
+                RangedValueComplicationData.Builder(content.value, content.min, content.max, description)
                     .setText(plain(content.shortText))
                     .setTapAction(tap)
                     .build()

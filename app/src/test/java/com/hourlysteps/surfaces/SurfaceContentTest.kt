@@ -150,10 +150,18 @@ class SurfaceContentTest {
     }
 
     @Test
-    fun `slot complication value never exceeds its range`() {
+    fun `slot complication carries the true count past its target`() {
         val c = slotComplication(status(inSlot = 900))
         assertEquals(584f, c.value, 0.001f)
+        assertEquals(584f, c.max, 0.001f)
+        assertEquals(-316f, c.min, 0.001f)
+        assertEquals(900f, c.value - c.min, 0.001f)
         assertEquals("900", c.shortText)
+    }
+
+    @Test
+    fun `slot complication starts its range at zero up to its target`() {
+        assertEquals(0f, slotComplication(status(inSlot = 584)).min, 0.001f)
     }
 
     @Test
@@ -169,6 +177,14 @@ class SurfaceContentTest {
         assertEquals("3,500", c.shortText)
         assertEquals("today", c.shortTitle)
         assertEquals("3,500 of 7,000 today", c.longText)
+    }
+
+    @Test
+    fun `today complication carries the true count past the goal`() {
+        val c = todayComplication(status(total = 7100))
+        assertEquals(7000f, c.value, 0.001f)
+        assertEquals(7000f, c.max, 0.001f)
+        assertEquals(7100f, c.value - c.min, 0.001f)
     }
 
     @Test
@@ -190,6 +206,11 @@ class SurfaceContentTest {
         val paused = slotComplication(status(s = settings.copy(pausedThrough = day)))
         assertTrue(paused.max > 0f)
         assertTrue(paused.value <= paused.max)
+        // The system throws on a value outside its range.
+        listOf(slotComplication(status(inSlot = 900)), todayComplication(status(total = 7100))).forEach {
+            assertTrue(it.value >= it.min)
+            assertTrue(it.value <= it.max)
+        }
     }
 
 
