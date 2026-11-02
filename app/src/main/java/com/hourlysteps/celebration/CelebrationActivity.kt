@@ -108,8 +108,7 @@ class CelebrationActivity : ComponentActivity() {
     }
 }
 
-private const val SHOW_FOR_MS = 7_000L
-private const val SHOW_DAILY_FOR_MS = 10_000L
+private const val SHOW_FOR_MS = 5_000L
 
 @Composable
 fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: () -> Unit) {
@@ -124,7 +123,7 @@ fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: (
         }
     }
     LaunchedEffect(Unit) {
-        delay(if (isDaily) SHOW_DAILY_FOR_MS else SHOW_FOR_MS)
+        delay(SHOW_FOR_MS)
         onDone()
     }
 
