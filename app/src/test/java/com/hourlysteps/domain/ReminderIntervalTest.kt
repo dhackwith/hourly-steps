@@ -101,8 +101,8 @@ class ReminderIntervalTest {
     @Test
     fun `a goal check reports the shortfall against the interval's goal`() {
         val result = CheckDecider.decide(settings(30), plan, slotAt(30, 14), 100, 1000)
-        // 12 half hours are left from 2 PM, and 6,000 steps to go.
-        assertEquals(CheckResult.GoalShortfall(need = 192, catchUpPerSlot = 500), result)
+        // 900 before this half hour, 6,100 to go across 12 half hours -> 509.
+        assertEquals(CheckResult.GoalShortfall(need = 409), result)
     }
 
     @Test
@@ -113,7 +113,7 @@ class ReminderIntervalTest {
 
     @Test
     fun `a celebration carries its slot's length`() {
-        val slot = CelebrationDecider.decide(settings(120), plan, 120, 1167, 2000, false)
+        val slot = CelebrationDecider.decide(settings(120), plan, slotAt(120, 8), 1167, 1167, false)
         assertEquals(CelebrationKind.SLOT_GOAL, slot?.kind)
         assertEquals(1167, slot?.target)
         assertEquals(120, slot?.slotMinutes)
@@ -122,8 +122,8 @@ class ReminderIntervalTest {
     @Test
     fun `an inactivity celebration asks for the slot's share of the rate`() {
         val s = settings(30, inactivity = true)
-        assertNull(CelebrationDecider.decide(s, plan, 30, 124, 8000, false))
-        val reached = CelebrationDecider.decide(s, plan, 30, 125, 8000, false)
+        assertNull(CelebrationDecider.decide(s, plan, slotAt(30, 8), 124, 8000, false))
+        val reached = CelebrationDecider.decide(s, plan, slotAt(30, 8), 125, 8000, false)
         assertEquals(CelebrationKind.INACTIVITY_GOAL, reached?.kind)
         assertEquals(125, reached?.target)
     }

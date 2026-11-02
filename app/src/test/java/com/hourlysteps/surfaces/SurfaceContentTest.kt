@@ -21,7 +21,7 @@ class SurfaceContentTest {
 
     private val zone: ZoneId = ZoneId.of("America/New_York")
     private val day: LocalDate = LocalDate.of(2026, 6, 10) // a Wednesday
-    private val settings = Settings() // 7000/day, 8:00 to 20:00, slot goal 584
+    private val settings = Settings() // 7000/day, 8:00 to 20:00
 
     private fun at(hour: Int, minute: Int = 20) = ZonedDateTime.of(day, LocalTime.of(hour, minute), zone)
     private val allOff = settings.copy(
@@ -35,8 +35,9 @@ class SurfaceContentTest {
     fun `active status tracks the slot and the day`() {
         val st = status()
         assertEquals(DayStatusKind.ACTIVE, st.kind)
-        assertEquals(584, st.slotTarget)
-        assertEquals(0.5f, st.slotProgress, 0.001f)
+        // 3,208 before this hour, 3,792 to go across 10 hours.
+        assertEquals(380, st.slotTarget)
+        assertEquals(292f / 380, st.slotProgress, 0.001f)
         assertEquals(0.5f, st.todayProgress, 0.001f)
     }
 
@@ -51,7 +52,7 @@ class SurfaceContentTest {
     fun `active rings show the slot number with both captions`() {
         val c = ringContent(status())
         assertEquals("292", c.value)
-        assertEquals("of 584 this hour", c.valueCaption)
+        assertEquals("of 380 this hour", c.valueCaption)
         assertTrue(c.captionIsSlot)
         assertEquals("Today 3,500 / 7,000", c.todayLine)
         assertNull(c.title)
@@ -140,28 +141,51 @@ class SurfaceContentTest {
     }
 
     @Test
+    fun `walking extra earlier lowers this hour's number everywhere`() {
+        // 2,400 before 11 AM, 4,600 to go across 9 hours.
+        val st = DayStatus.compute(at(11, 7), settings, 66, 2466)
+        assertEquals(512, st.slotTarget)
+        assertEquals("of 512 this hour", ringContent(st).valueCaption)
+        assertEquals("66 of 512 this hour", slotComplication(st).longText)
+        assertEquals("446", paceCheckContent(st)!!.left)
+    }
+
+    @Test
+    fun `this hour's number holds still as steps come in`() {
+        assertEquals(512, DayStatus.compute(at(11, 7), settings, 0, 2400).slotTarget)
+        assertEquals(512, DayStatus.compute(at(11, 30), settings, 300, 2700).slotTarget)
+    }
+
+    @Test
+    fun `the hour that reaches the daily goal keeps showing a sensible number`() {
+        val st = status(inSlot = 900, total = 7000, s = settings.copy(inactivityEnabled = false))
+        assertEquals(584, st.slotTarget)
+    }
+
+    @Test
     fun `slot complication shows steps against the target`() {
         val c = slotComplication(status())
         assertEquals(292f, c.value, 0.001f)
-        assertEquals(584f, c.max, 0.001f)
+        assertEquals(380f, c.max, 0.001f)
         assertEquals("292", c.shortText)
-        assertEquals("of 584", c.shortTitle)
-        assertEquals("292 of 584 this hour", c.longText)
+        assertEquals("of 380", c.shortTitle)
+        assertEquals("292 of 380 this hour", c.longText)
     }
 
     @Test
     fun `slot complication carries the true count past its target`() {
         val c = slotComplication(status(inSlot = 900))
-        assertEquals(584f, c.value, 0.001f)
-        assertEquals(584f, c.max, 0.001f)
-        assertEquals(-316f, c.min, 0.001f)
+        // 2,600 before this hour, 4,400 to go across 10 hours.
+        assertEquals(440f, c.value, 0.001f)
+        assertEquals(440f, c.max, 0.001f)
+        assertEquals(-460f, c.min, 0.001f)
         assertEquals(900f, c.value - c.min, 0.001f)
         assertEquals("900", c.shortText)
     }
 
     @Test
     fun `slot complication starts its range at zero up to its target`() {
-        assertEquals(0f, slotComplication(status(inSlot = 584)).min, 0.001f)
+        assertEquals(0f, slotComplication(status()).min, 0.001f)
     }
 
     @Test
@@ -224,36 +248,37 @@ class SurfaceContentTest {
     @Test
     fun `the slot caption names the half hour`() {
         val c = ringContent(status(total = 400, s = withInterval(30)))
-        assertEquals("of 292 this half hour", c.valueCaption)
+        assertEquals("of 345 this half hour", c.valueCaption)
         assertEquals("962 behind pace", c.paceLine)
     }
 
     @Test
     fun `the slot caption names the two hours`() {
         val c = ringContent(status(total = 400, s = withInterval(120)))
-        assertEquals("of 1,167 these two hours", c.valueCaption)
+        assertEquals("of 1,379 these two hours", c.valueCaption)
         assertEquals("962 behind pace", c.paceLine)
     }
 
     @Test
     fun `a short last slot says what it is`() {
         val c = ringContent(status(hour = 18, s = withInterval(120, endMinute = 19 * 60)))
-        assertEquals("of 1,167 this hour", c.valueCaption)
+        assertEquals("of 3,792 this hour", c.valueCaption)
     }
 
     @Test
     fun `the slot complication names the interval`() {
-        assertEquals("292 of 292 this half hour", slotComplication(status(s = withInterval(30))).longText)
-        assertEquals("292 of 1,167 these two hours", slotComplication(status(s = withInterval(120))).longText)
+        assertEquals("100 of 180 this half hour", slotComplication(status(inSlot = 100, s = withInterval(30))).longText)
+        assertEquals("100 of 720 these two hours", slotComplication(status(inSlot = 100, s = withInterval(120))).longText)
     }
 
 
     @Test
     fun `the pace check shows what's left and how the day stands`() {
         val c = paceCheckContent(status(hour = 12, inSlot = 272, total = 1720))!!
-        assertEquals("312", c.left)
+        // 1,448 before this hour, 5,552 to go across 8 hours.
+        assertEquals("422", c.left)
         assertEquals("left this hour", c.caption)
-        assertEquals(272f / 584, c.slotProgress, 0.001f)
+        assertEquals(272f / 694, c.slotProgress, 0.001f)
         assertEquals("Today 1,720 of 7,000", c.todayLine)
         assertEquals(1720f / 7000, c.todayProgress, 0.001f)
         assertEquals(2528f / 7000, c.paceMarker!!, 0.001f)

@@ -79,7 +79,7 @@ class CelebrationManager(
             CelebrationDecider.decide(
                 settings = settings,
                 plan = plan,
-                slotLengthMinutes = it.lengthMinutes,
+                slot = it,
                 stepsInSlot = inSlot,
                 todayTotal = total,
                 alreadyCelebratedThisSlot = prefs.getString(KEY_LAST_SLOT, null) == slotKey,

@@ -37,7 +37,7 @@ object CelebrationDecider {
     fun decide(
         settings: Settings,
         plan: DayPlan,
-        slotLengthMinutes: Int,
+        slot: Slot,
         stepsInSlot: Int,
         todayTotal: Int,
         alreadyCelebratedThisSlot: Boolean,
@@ -47,13 +47,13 @@ object CelebrationDecider {
         val totalAtSlotStart = todayTotal - stepsInSlot
         val (kind, target) = when {
             totalAtSlotStart < plan.dailyGoal ->
-                CelebrationKind.SLOT_GOAL to GoalCalculator.slotGoal(plan, settings.schedule.slotMinutes)
+                CelebrationKind.SLOT_GOAL to GoalCalculator.slotGoalFromRemaining(plan.dailyGoal, slot, totalAtSlotStart)
             settings.inactivityEnabled ->
-                CelebrationKind.INACTIVITY_GOAL to GoalCalculator.inactivityGoal(settings.inactivityThreshold, slotLengthMinutes)
+                CelebrationKind.INACTIVITY_GOAL to GoalCalculator.inactivityGoal(settings.inactivityThreshold, slot.lengthMinutes)
             else -> return null
         }
         if (stepsInSlot < target) return null
-        return Celebration(kind, stepsInSlot, target, todayTotal, plan.dailyGoal, slotMinutes = slotLengthMinutes)
+        return Celebration(kind, stepsInSlot, target, todayTotal, plan.dailyGoal, slotMinutes = slot.lengthMinutes)
     }
 
     /** Whether today's total has reached the daily goal and not yet been celebrated. */

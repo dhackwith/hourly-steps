@@ -4,7 +4,10 @@ Standalone Wear OS app (Pixel Watch 4, Wear OS 6 / API 36) that reminds you near
 hour, at :50, when you are short of an hourly step goal derived from your daily goal. Prefer a
 different rhythm? Reminders can also come every 30 minutes or every 2 hours.
 
-- Default: 7,000 steps/day over 12 reminders (8:50 AM – 7:50 PM) = 584 steps/hour.
+- Default: 7,000 steps/day over 12 reminders (8:50 AM – 7:50 PM), which starts at 584 steps/hour.
+- Each hour's goal is what's left of your daily goal shared across the hours left, so it follows how
+  the day has gone. With 2,400 steps by 11 AM that hour asks for 512; with only 500 it asks for 723.
+  A goal holds still during its hour and the next hour takes your new total into account.
 - The reminder opens a **Pace check** screen: `312 left this hour`, a bar for the hour, and a bar for
   today with a tick where you should be by now, plus `1,100 behind pace`. It follows your steps
   while open and closes itself once the hour's goal is met. Home and the tile show the same pace line.
@@ -30,10 +33,10 @@ different rhythm? Reminders can also come every 30 minutes or every 2 hours.
   inside), watch-face **complications** for this hour and for today, and a **Today** page (swipe
   left on Home) showing each hour's result and why a reminder did or didn't fire.
 - **Reminder interval** sets how often reminders come. The check lands a sixth of the way before
-  each period ends: :25 and :55 every 30 minutes (292 steps each), :50 every hour (584), and 20
+  each period ends: :25 and :55 every 30 minutes (starting at 292 steps each), :50 every hour (584), and 20
   minutes before each two-hour block ends (1,167). All the text follows: "this half hour", "this
   hour", "these two hours". If your hours don't divide evenly into two-hour blocks, the last one is
-  a single hour with the same goal as the others.
+  a single hour that counts as one block like the others.
 - **Themes** recolour the rings, buttons, tile and fireworks. Pick from Violet (light purple and
   violet, the default), Classic, Ocean, Forest, Sunset, Rose or Graphite in Settings. Tapping one
   applies it straight away, so it's easy to try them all.

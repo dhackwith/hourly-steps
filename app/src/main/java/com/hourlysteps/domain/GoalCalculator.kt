@@ -4,7 +4,7 @@ object GoalCalculator {
 
     fun slotCount(plan: DayPlan, slotMinutes: Int): Int = Slots.boundaries(plan, slotMinutes).size
 
-    /** Steps required in each slot so that all slots together reach the plan's daily goal. */
+    /** An even share of the daily goal. This is the plan's rough figure; see [slotGoalFromRemaining] for the day's real one. */
     fun slotGoal(plan: DayPlan, slotMinutes: Int): Int =
         ceilDiv(plan.dailyGoal, slotCount(plan, slotMinutes).coerceAtLeast(1))
 
@@ -12,20 +12,13 @@ object GoalCalculator {
     fun inactivityGoal(stepsPerHour: Int, slotLengthMinutes: Int): Int =
         ceilDiv(stepsPerHour * slotLengthMinutes, 60)
 
-    /** Slots still open at [minuteOfDay], including the current one. Zero once the window is over. */
-    fun remainingSlots(plan: DayPlan, slotMinutes: Int, minuteOfDay: Int): Int =
-        Slots.boundaries(plan, slotMinutes).count { (_, end) -> end > minuteOfDay }
-
     /**
-     * Steps per slot needed over the remaining slots to still reach the daily goal.
-     * Null when no slots remain or the goal is already met.
+     * Steps to aim for in [slot]: what was left of the daily goal when it began, shared between it
+     * and the slots after it. Steps taken during the slot don't move it, so it holds still until
+     * the next slot, which then accounts for how this one went.
      */
-    fun catchUpPerSlot(plan: DayPlan, slotMinutes: Int, todayTotal: Int, minuteOfDay: Int): Int? {
-        val remaining = remainingSlots(plan, slotMinutes, minuteOfDay)
-        val deficit = plan.dailyGoal - todayTotal
-        if (remaining == 0 || deficit <= 0) return null
-        return ceilDiv(deficit, remaining)
-    }
+    fun slotGoalFromRemaining(dailyGoal: Int, slot: Slot, totalAtSlotStart: Int): Int =
+        ceilDiv((dailyGoal - totalAtSlotStart).coerceAtLeast(0), (slot.count - slot.index).coerceAtLeast(1))
 
     fun ceilDiv(numerator: Int, denominator: Int): Int =
         (numerator + denominator - 1) / denominator

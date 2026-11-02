@@ -31,7 +31,8 @@ data class CheckLogEntity(
     val todayTotal: Int,
     val mode: String,
     val need: Int,
-    val catchUpPerSlot: Int?,
+    /** No longer written. The column stays for older rows. */
+    val catchUpPerSlot: Int? = null,
     val notified: Boolean,
     val skippedReason: String?,
     /** True for a second nudge or a snoozed reminder coming back, not the slot's main check. */

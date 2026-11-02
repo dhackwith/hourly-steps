@@ -6,7 +6,7 @@ import org.junit.Test
 
 class CheckDeciderTest {
 
-    private val defaults = Settings() // 7000/day, 8:00 to 20:00, slot goal 584, inactivity off
+    private val defaults = Settings() // 7000/day, 8:00 to 20:00, inactivity off
     private val plan = defaults.schedule.planA
     private val slots = Slots.forDay(plan, 60, LocalDate.of(2026, 6, 10))
 
@@ -17,20 +17,23 @@ class CheckDeciderTest {
         CheckDecider.decide(s, plan, slot(hour), steps, total)
 
     @Test
-    fun `short of the slot goal and on pace reports shortfall without catch up`() {
-        assertEquals(CheckResult.GoalShortfall(need = 284, catchUpPerSlot = null), decide(steps = 300, total = 1500))
+    fun `short of the slot goal reports the steps needed`() {
+        // 1,200 before this slot, 5,800 to go across 10 hours -> 580.
+        assertEquals(CheckResult.GoalShortfall(need = 280), decide(steps = 300, total = 1500))
     }
 
     @Test
-    fun `short of the slot goal and behind pace includes catch up`() {
-        // total 400 at 10:50 -> 660 per slot needed over 10 slots
-        assertEquals(CheckResult.GoalShortfall(need = 212, catchUpPerSlot = 660), decide(steps = 372, total = 400))
+    fun `a slow start raises the slot goal`() {
+        // 28 before this slot, 6,972 to go across 10 hours -> 698.
+        assertEquals(CheckResult.GoalShortfall(need = 326), decide(steps = 372, total = 400))
     }
 
     @Test
-    fun `catch up equal to the slot goal is not shown`() {
-        // deficit 5840 over 10 slots = 584 exactly
-        assertEquals(CheckResult.GoalShortfall(need = 484, catchUpPerSlot = null), decide(steps = 100, total = 1160))
+    fun `steps during the slot don't move its goal`() {
+        // 1,168 before this slot, 5,832 to go across 10 hours -> 584.
+        assertEquals(CheckResult.GoalShortfall(need = 484), decide(steps = 100, total = 1268))
+        assertEquals(CheckResult.GoalShortfall(need = 284), decide(steps = 300, total = 1468))
+        assertEquals(CheckResult.None, decide(steps = 584, total = 1752))
     }
 
     @Test
@@ -62,12 +65,12 @@ class CheckDeciderTest {
     fun `inactivity on but goal not yet met is still a goal check`() {
         val s = defaults.copy(inactivityEnabled = true, inactivityThreshold = 250)
         assertEquals(CheckMode.GOAL, CheckDecider.modeFor(s, plan, 6999))
-        assertEquals(CheckResult.GoalShortfall(need = 284, catchUpPerSlot = null), decide(s, steps = 300, total = 6999, hour = 18))
+        assertEquals(CheckResult.GoalShortfall(need = 1), decide(s, steps = 0, total = 6999, hour = 18))
     }
 
     @Test
-    fun `last slot catch up is the full deficit`() {
-        assertEquals(CheckResult.GoalShortfall(need = 584, catchUpPerSlot = 1500), decide(steps = 0, total = 5500, hour = 19))
+    fun `the last slot asks for everything left`() {
+        assertEquals(CheckResult.GoalShortfall(need = 1500), decide(steps = 0, total = 5500, hour = 19))
     }
 
     @Test
@@ -76,7 +79,7 @@ class CheckDeciderTest {
         val slot = Slots.forDay(lighter, 60, LocalDate.of(2026, 6, 10)).first()
         assertEquals(CheckResult.None, CheckDecider.decide(defaults, lighter, slot, 500, 500))
         assertEquals(
-            CheckResult.GoalShortfall(need = 100, catchUpPerSlot = null),
+            CheckResult.GoalShortfall(need = 100),
             CheckDecider.decide(defaults, lighter, slot, 400, 400),
         )
     }
@@ -86,6 +89,6 @@ class CheckDeciderTest {
         val s = defaults.copy(schedule = defaults.schedule.copy(slotMinutes = 30))
         val slot = Slots.forDay(plan, 30, LocalDate.of(2026, 6, 10)).first()
         assertEquals(CheckResult.None, CheckDecider.decide(s, plan, slot, 292, 292))
-        assertEquals(CheckResult.GoalShortfall(need = 2, catchUpPerSlot = null), CheckDecider.decide(s, plan, slot, 290, 290))
+        assertEquals(CheckResult.GoalShortfall(need = 2), CheckDecider.decide(s, plan, slot, 290, 290))
     }
 }

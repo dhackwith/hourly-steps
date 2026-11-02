@@ -62,7 +62,12 @@ data class DayStatus(
                 else -> DayStatusKind.ACTIVE
             }
             val mode = plan?.let { CheckDecider.modeFor(settings, it, todayTotal) } ?: CheckMode.OFF
-            val slotGoal = plan?.let { GoalCalculator.slotGoal(it, slotMinutes) } ?: 0
+            val slotGoal = when {
+                plan == null -> 0
+                slot != null && mode == CheckMode.GOAL ->
+                    GoalCalculator.slotGoalFromRemaining(plan.dailyGoal, slot, todayTotal - stepsInSlot)
+                else -> GoalCalculator.slotGoal(plan, slotMinutes)
+            }
             val paceTarget = if (kind == DayStatusKind.ACTIVE && mode == CheckMode.GOAL && plan != null && slot != null) {
                 Pace.target(plan.dailyGoal, slot, Slots.minuteOfDay(now))
             } else {

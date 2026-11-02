@@ -1,28 +1,51 @@
 package com.hourlysteps.domain
 
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
 class CelebrationDeciderTest {
 
-    private val defaults = Settings() // 7000/day, slot goal 584, inactivity off, celebrate on
+    private val defaults = Settings() // 7000/day, 8:00 to 20:00, inactivity off, celebrate on
     private val plan = defaults.schedule.planA
 
-    private fun decide(s: Settings = defaults, steps: Int, total: Int, already: Boolean = false, p: DayPlan = plan) =
-        CelebrationDecider.decide(s, p, s.schedule.slotMinutes, steps, total, already)
+    /** Decides for the first slot starting at or after [hour]. */
+    private fun decide(s: Settings = defaults, steps: Int, total: Int, already: Boolean = false, p: DayPlan = plan, hour: Int = 8) =
+        CelebrationDecider.decide(
+            s,
+            p,
+            Slots.forDay(p, s.schedule.slotMinutes, LocalDate.of(2026, 6, 10)).first { it.startMinute >= hour * 60 },
+            steps,
+            total,
+            already,
+        )
 
     @Test
     fun `reaching the slot goal celebrates`() {
         assertEquals(
-            Celebration(CelebrationKind.SLOT_GOAL, 584, 584, 2000, 7000),
-            decide(steps = 584, total = 2000),
+            Celebration(CelebrationKind.SLOT_GOAL, 584, 584, 584, 7000),
+            decide(steps = 584, total = 584),
         )
     }
 
     @Test
     fun `below the slot goal does not celebrate`() {
-        assertNull(decide(steps = 583, total = 2000))
+        assertNull(decide(steps = 583, total = 583))
+    }
+
+    @Test
+    fun `walking extra earlier lowers the goal to celebrate`() {
+        // 2,400 before 11 AM, 4,600 to go across 9 hours -> 512.
+        assertNull(decide(steps = 511, total = 2911, hour = 11))
+        assertEquals(512, decide(steps = 512, total = 2912, hour = 11)?.target)
+    }
+
+    @Test
+    fun `falling behind raises the goal to celebrate`() {
+        // 500 before 11 AM, 6,500 to go across 9 hours -> 723.
+        assertNull(decide(steps = 722, total = 1222, hour = 11))
+        assertEquals(723, decide(steps = 723, total = 1223, hour = 11)?.target)
     }
 
     @Test
@@ -37,10 +60,10 @@ class CelebrationDeciderTest {
 
     @Test
     fun `crossing the daily goal in the same batch still celebrates the slot`() {
-        // 6,600 before this slot, 600 in it: the daily goal and the slot goal fall together.
-        val c = decide(steps = 600, total = 7200)
+        // 6,600 before the last slot, 600 in it: the daily goal and the slot goal fall together.
+        val c = decide(steps = 600, total = 7200, hour = 19)
         assertEquals(CelebrationKind.SLOT_GOAL, c?.kind)
-        assertEquals(584, c?.target)
+        assertEquals(400, c?.target)
     }
 
     @Test

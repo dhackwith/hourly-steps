@@ -13,7 +13,7 @@ class TodaySummaryTest {
 
     private val zone: ZoneId = ZoneId.of("America/New_York")
     private val day: LocalDate = LocalDate.of(2026, 6, 10) // a Wednesday
-    private val settings = Settings() // 7000/day, 8:00 to 20:00, slot goal 584
+    private val settings = Settings() // 7000/day, 8:00 to 20:00
 
     private fun at(hour: Int, minute: Int = 0): ZonedDateTime = ZonedDateTime.of(day, LocalTime.of(hour, minute), zone)
     private fun millis(hour: Int, minute: Int = 0) = at(hour, minute).toInstant().toEpochMilli()
@@ -43,14 +43,14 @@ class TodaySummaryTest {
     @Test
     fun `the current slot is in progress until it reaches its goal`() {
         assertEquals(SlotOutcome.IN_PROGRESS, summary(at(10, 20), listOf(point(10, 10, 100))).row(10).outcome)
-        assertEquals(SlotOutcome.HIT, summary(at(10, 20), listOf(point(10, 10, 584))).row(10).outcome)
+        assertEquals(SlotOutcome.HIT, summary(at(10, 20), listOf(point(10, 10, 700))).row(10).outcome)
     }
 
     @Test
     fun `a finished slot that reached its goal is a hit`() {
-        val s = summary(at(11), listOf(point(10, 30, 600)), listOf(check(10)))
+        val s = summary(at(11), listOf(point(10, 30, 700)), listOf(check(10)))
         assertEquals(SlotOutcome.HIT, s.row(10).outcome)
-        assertEquals(600, s.row(10).steps)
+        assertEquals(700, s.row(10).steps)
         assertEquals(1, s.slotsHit)
     }
 
@@ -76,7 +76,7 @@ class TodaySummaryTest {
 
     @Test
     fun `reaching the goal counts even if the check was skipped`() {
-        val row = summary(at(11), listOf(point(10, 30, 600)), listOf(check(10, skipped = "charging"))).row(10)
+        val row = summary(at(11), listOf(point(10, 30, 700)), listOf(check(10, skipped = "charging"))).row(10)
         assertEquals(SlotOutcome.HIT, row.outcome)
     }
 
@@ -141,6 +141,52 @@ class TodaySummaryTest {
     fun `a slot with only a follow-up counts as not checked`() {
         val followUp = CheckRecord(millis(10, 55), 600, 0, true, null, isFollowUp = true)
         assertEquals(TodaySummary.REASON_NOT_CHECKED, summary(at(11), listOf(point(10, 30, 10)), listOf(followUp)).row(10).reason)
+    }
+
+    @Test
+    fun `each slot is judged by what was left when it began`() {
+        val s = summary(
+            at(11, 7),
+            listOf(point(8, 30, 1000), point(9, 30, 1000), point(10, 30, 400), point(11, 5, 66)),
+            listOf(check(8), check(9), check(10)),
+        )
+        assertEquals(584, s.row(8).goal)
+        assertEquals(SlotOutcome.HIT, s.row(8).outcome)
+        assertEquals(546, s.row(9).goal)
+        assertEquals(SlotOutcome.HIT, s.row(9).outcome)
+        assertEquals(500, s.row(10).goal)
+        assertEquals(SlotOutcome.SHORT, s.row(10).outcome)
+        assertEquals(512, s.row(11).goal)
+        assertEquals(SlotOutcome.IN_PROGRESS, s.row(11).outcome)
+    }
+
+    @Test
+    fun `upcoming slots assume the current one reaches its goal`() {
+        val s = summary(at(11, 7), listOf(point(10, 30, 2400), point(11, 5, 66)))
+        // 2,400 + the 512 asked for this hour leaves 4,088 across 8 hours.
+        assertEquals(511, s.row(12).goal)
+        assertEquals(511, s.row(19).goal)
+        assertEquals(SlotOutcome.UPCOMING, s.row(12).outcome)
+    }
+
+    @Test
+    fun `upcoming slots count steps already past the current goal`() {
+        val s = summary(at(11, 7), listOf(point(10, 30, 2400), point(11, 5, 1000)))
+        assertEquals(450, s.row(12).goal)
+    }
+
+    @Test
+    fun `before the window every slot shows the even share`() {
+        val s = summary(at(7))
+        assertEquals(584, s.row(8).goal)
+        assertEquals(584, s.row(19).goal)
+    }
+
+    @Test
+    fun `an upcoming slot is never a hit even when almost nothing is left`() {
+        // One step short at 11 AM: this hour's goal of 1 would finish the day.
+        val s = summary(at(11, 7), listOf(point(10, 30, 6999)))
+        assertEquals(SlotOutcome.UPCOMING, s.row(12).outcome)
     }
 
     @Test

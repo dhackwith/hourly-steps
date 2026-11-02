@@ -1,7 +1,7 @@
 package com.hourlysteps.domain
 
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -59,45 +59,51 @@ class GoalCalculatorTest {
         assertEquals(7000, GoalCalculator.slotGoal(DayPlan(startMinute = 600, endMinute = 600), 60))
     }
 
+    private val slots = Slots.forDay(plan, 60, LocalDate.of(2026, 6, 10))
+
+    /** The slot starting at [hour]. */
+    private fun slot(hour: Int) = slots.first { it.startMinute == hour * 60 }
+
     @Test
-    fun `remaining slots counts current through last inclusive`() {
-        assertEquals(12, GoalCalculator.remainingSlots(plan, 60, minute(8)))
-        assertEquals(10, GoalCalculator.remainingSlots(plan, 60, minute(10) + 50))
-        assertEquals(1, GoalCalculator.remainingSlots(plan, 60, minute(19)))
-        assertEquals(0, GoalCalculator.remainingSlots(plan, 60, minute(20)))
+    fun `a day with no steps yet asks for the even share`() {
+        assertEquals(584, GoalCalculator.slotGoalFromRemaining(7000, slots.first(), 0))
     }
 
     @Test
-    fun `remaining slots before the window counts the whole window`() {
-        assertEquals(12, GoalCalculator.remainingSlots(plan, 60, minute(5)))
+    fun `walking extra lowers the goal for the hours left`() {
+        // 2,400 by 11 AM, 4,600 to go across 9 hours.
+        assertEquals(512, GoalCalculator.slotGoalFromRemaining(7000, slot(11), 2400))
     }
 
     @Test
-    fun `remaining slots follows the slot length`() {
-        assertEquals(20, GoalCalculator.remainingSlots(plan, 30, minute(10)))
+    fun `falling behind raises the goal for the hours left`() {
+        assertEquals(723, GoalCalculator.slotGoalFromRemaining(7000, slot(11), 500))
     }
 
     @Test
-    fun `catch up matches the plan example when behind`() {
-        // 400 steps by the 10:50 check, 10 slots left -> ceil(6600 / 10) = 660
-        assertEquals(660, GoalCalculator.catchUpPerSlot(plan, 60, 400, minute(10)))
+    fun `the last slot asks for everything left`() {
+        assertEquals(1500, GoalCalculator.slotGoalFromRemaining(7000, slot(19), 5500))
     }
 
     @Test
-    fun `catch up is below the slot goal when ahead of pace`() {
-        // 1200 steps by 10:50 -> ceil(5800 / 10) = 580, which is under 584
-        assertEquals(580, GoalCalculator.catchUpPerSlot(plan, 60, 1200, minute(10)))
+    fun `nothing is asked for once the daily goal is met`() {
+        assertEquals(0, GoalCalculator.slotGoalFromRemaining(7000, slot(11), 7000))
+        assertEquals(0, GoalCalculator.slotGoalFromRemaining(7000, slot(11), 9000))
     }
 
     @Test
-    fun `catch up in the last slot is the whole deficit`() {
-        assertEquals(1500, GoalCalculator.catchUpPerSlot(plan, 60, 5500, minute(19)))
+    fun `reaching every slot's goal exactly reaches the daily goal`() {
+        for (dailyGoal in listOf(7000, 7001, 10000, 13)) {
+            var total = 0
+            for (slot in slots) total += GoalCalculator.slotGoalFromRemaining(dailyGoal, slot, total)
+            assertEquals(dailyGoal, total)
+        }
     }
 
     @Test
-    fun `catch up is null when the goal is met or the window is over`() {
-        assertNull(GoalCalculator.catchUpPerSlot(plan, 60, 7000, minute(10)))
-        assertNull(GoalCalculator.catchUpPerSlot(plan, 60, 9000, minute(10)))
-        assertNull(GoalCalculator.catchUpPerSlot(plan, 60, 100, minute(20)))
+    fun `the goal follows the slot length`() {
+        // 2,400 by 11 AM, 4,600 to go across 18 half hours.
+        val halfHours = Slots.forDay(plan, 30, LocalDate.of(2026, 6, 10))
+        assertEquals(256, GoalCalculator.slotGoalFromRemaining(7000, halfHours.first { it.startMinute == 11 * 60 }, 2400))
     }
 }

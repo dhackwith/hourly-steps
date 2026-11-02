@@ -134,7 +134,6 @@ class ReminderCheck(
                     is CheckResult.InactivityShortfall -> result.need
                     CheckResult.None -> 0
                 },
-                catchUpPerSlot = (result as? CheckResult.GoalShortfall)?.catchUpPerSlot,
                 notified = result != CheckResult.None,
                 skippedReason = skippedReason,
                 isFollowUp = isFollowUp,
