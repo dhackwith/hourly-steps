@@ -18,6 +18,7 @@ import com.hourlysteps.domain.CheckResult
 import com.hourlysteps.domain.Settings
 import com.hourlysteps.domain.VibrationStrength
 import com.hourlysteps.ui.MainActivity
+import com.hourlysteps.ui.formatSteps
 import java.time.Clock
 import java.time.Duration
 import java.time.ZonedDateTime
@@ -57,12 +58,12 @@ class ReminderNotifier(
             CheckResult.None -> return
             is CheckResult.GoalShortfall -> Triple(
                 CHANNEL_GOAL,
-                context.resources.getQuantityString(R.plurals.notif_more_steps, result.need, result.need),
-                result.catchUpPerHour?.let { context.getString(R.string.notif_catch_up, it) },
+                moreStepsText(result.need),
+                result.catchUpPerHour?.let { context.getString(R.string.notif_catch_up, formatSteps(it)) },
             )
             is CheckResult.InactivityShortfall -> Triple(
                 CHANNEL_INACTIVITY,
-                context.resources.getQuantityString(R.plurals.notif_more_steps, result.need, result.need),
+                moreStepsText(result.need),
                 null,
             )
         }
@@ -92,6 +93,9 @@ class ReminderNotifier(
         notificationManager.notify(NOTIFICATION_ID, builder.build())
         vibrate(settings.vibration)
     }
+
+    private fun moreStepsText(need: Int): String =
+        context.resources.getQuantityString(R.plurals.notif_more_steps, need, formatSteps(need))
 
     fun cancel() {
         notificationManager.cancel(NOTIFICATION_ID)

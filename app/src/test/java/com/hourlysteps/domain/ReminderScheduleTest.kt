@@ -66,6 +66,21 @@ class ReminderScheduleTest {
     }
 
     @Test
+    fun `check running within its hour is not late`() {
+        assertEquals(false, ReminderSchedule.isLate(at(day, 10, 50), at(day, 10, 50)))
+        assertEquals(false, ReminderSchedule.isLate(at(day, 10, 50), at(day, 10, 59)))
+        // Inexact fallback alarms may fire a few minutes early.
+        assertEquals(false, ReminderSchedule.isLate(at(day, 10, 50), at(day, 10, 45)))
+    }
+
+    @Test
+    fun `check running after its hour ended is late`() {
+        assertEquals(true, ReminderSchedule.isLate(at(day, 10, 50), at(day, 11, 0)))
+        assertEquals(true, ReminderSchedule.isLate(at(day, 10, 50), at(day, 11, 5)))
+        assertEquals(true, ReminderSchedule.isLate(at(day, 19, 50), at(day.plusDays(1), 8, 0)))
+    }
+
+    @Test
     fun `single slot window alternates days`() {
         val s = defaults.copy(firstHour = 12, lastHour = 12)
         assertEquals(at(day, 12, 50), ReminderSchedule.nextCheckTime(at(day, 12, 0), s))

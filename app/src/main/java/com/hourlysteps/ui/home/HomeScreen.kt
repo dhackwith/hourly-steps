@@ -4,16 +4,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.wear.compose.material3.CircularProgressIndicator
+import androidx.wear.compose.material3.CircularProgressIndicatorDefaults
 import androidx.wear.compose.material3.EdgeButton
+import androidx.wear.compose.material3.drawCircularProgressIndicator
 import androidx.wear.compose.material3.EdgeButtonSize
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ProgressIndicatorDefaults
@@ -25,7 +28,7 @@ import com.hourlysteps.ui.formatTime
 @Composable
 fun HomeScreen(viewModel: HomeViewModel, onOpenSettings: () -> Unit) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    HomeContent(state, onOpenSettings)
+    state?.let { HomeContent(it, onOpenSettings) }
 }
 
 @Composable
@@ -38,12 +41,24 @@ fun HomeContent(state: HomeUiState, onOpenSettings: () -> Unit) {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        CircularProgressIndicator(
-            progress = { if (state.dailyGoalMet && state.mode == CheckMode.OFF) 1f else state.ringProgress },
-            modifier = Modifier.fillMaxSize().padding(4.dp),
-            colors = ringColors,
-            startAngle = 120f,
-            endAngle = 60f,
+        // Drawn directly rather than with the animated CircularProgressIndicator composable: that
+        // one keeps the progress it was first composed with and drops the next update, so after
+        // navigating back it can show a stale value indefinitely.
+        val progress = if (state.dailyGoalMet && state.mode == CheckMode.OFF) 1f else state.ringProgress
+        val strokeWidth = CircularProgressIndicatorDefaults.largeStrokeWidth
+        Spacer(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp)
+                .drawBehind {
+                    drawCircularProgressIndicator(
+                        progress = progress,
+                        colors = ringColors,
+                        strokeWidth = strokeWidth,
+                        startAngle = 120f,
+                        endAngle = 60f,
+                    )
+                },
         )
 
         Column(

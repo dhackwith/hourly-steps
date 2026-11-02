@@ -2,6 +2,7 @@ package com.hourlysteps.domain
 
 import java.time.LocalTime
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 
 object ReminderSchedule {
 
@@ -21,4 +22,12 @@ object ReminderSchedule {
         }
         error("No reminder slot found within three days; window=${settings.firstHour}..${settings.lastHour}")
     }
+
+    /**
+     * True when a check armed for [slot] runs after that slot's hour has ended, e.g. the watch
+     * was off, the clock jumped, or the alarm was deferred. Reminding then would describe an
+     * hour that is already over, so the check should be skipped.
+     */
+    fun isLate(slot: ZonedDateTime, now: ZonedDateTime): Boolean =
+        !now.isBefore(slot.truncatedTo(ChronoUnit.HOURS).plusHours(1))
 }

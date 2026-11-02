@@ -57,7 +57,11 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         ) { thisHour, total -> thisHour to total }
     }
 
-    val state: StateFlow<HomeUiState> = combine(
+    /**
+     * Null until the first real values load. The Wear progress ring keeps its first progress
+     * value and skips the first change after that, so it must not be composed with a placeholder.
+     */
+    val state: StateFlow<HomeUiState?> = combine(
         now,
         steps,
         container.settingsRepository.settings,
@@ -79,5 +83,5 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
             nextCheck = ReminderSchedule.nextCheckTime(time, settings),
             inWindow = time.hour in settings.firstHour..settings.lastHour,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 }

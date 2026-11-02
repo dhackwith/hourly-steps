@@ -1,6 +1,8 @@
 package com.hourlysteps.reminder
 
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.BatteryManager
 import android.util.Log
 import com.hourlysteps.data.db.CheckLogDao
@@ -10,6 +12,7 @@ import com.hourlysteps.data.steps.StepsRepository
 import com.hourlysteps.domain.CheckDecider
 import com.hourlysteps.domain.CheckResult
 import com.hourlysteps.domain.HourBucketing
+import com.hourlysteps.domain.ReminderSchedule
 import java.time.Clock
 import java.time.ZonedDateTime
 
@@ -40,7 +43,8 @@ class ReminderCheck(
         val todayTotal = stepsRepository.todayTotal(slot)
 
         val skippedReason = when {
-            !force && settings.skipWhileCharging && isCharging() -> "charging"
+            scheduledAt != null && ReminderSchedule.isLate(scheduledAt, now) -> "late"
+            !force && settings.skipWhileCharging && isOnCharger() -> "charging"
             else -> null
         }
         val result = if (skippedReason != null) {
@@ -81,8 +85,14 @@ class ReminderCheck(
         return result
     }
 
-    private fun isCharging(): Boolean =
-        context.getSystemService(BatteryManager::class.java)?.isCharging == true
+    /**
+     * True when any charger is connected. BatteryManager.isCharging() is not enough: a full
+     * battery, or one held at a charge limit, reports "not charging" while on the dock.
+     */
+    private fun isOnCharger(): Boolean {
+        val battery = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        return (battery?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0) != 0
+    }
 
     private companion object {
         const val RETENTION_DAYS = 14L
