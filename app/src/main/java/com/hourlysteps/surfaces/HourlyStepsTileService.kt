@@ -25,6 +25,7 @@ import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.ListenableFuture
 import com.hourlysteps.HourlyStepsApp
+import com.hourlysteps.domain.AppTheme
 import com.hourlysteps.domain.DayStatus
 import com.hourlysteps.ui.MainActivity
 import java.time.Duration
@@ -46,10 +47,11 @@ class HourlyStepsTileService : TileService() {
     override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> =
         SuspendToFutureAdapter.launchFuture(Dispatchers.IO) {
             val status = container.dayStatusProvider.current()
+            val theme = container.settingsRepository.current().theme
             TileBuilders.Tile.Builder()
                 .setResourcesVersion(RESOURCES_VERSION)
                 .setFreshnessIntervalMillis(freshnessMillis(status))
-                .setTileTimeline(Timeline.fromLayoutElement(tileLayout(ringContent(status))))
+                .setTileTimeline(Timeline.fromLayoutElement(tileLayout(ringContent(status), theme)))
                 .build()
         }
 
@@ -65,34 +67,34 @@ class HourlyStepsTileService : TileService() {
         return untilSlotEnd.coerceIn(MIN_FRESHNESS_MS, MAX_FRESHNESS_MS)
     }
 
-    private fun tileLayout(content: RingContent): LayoutElement {
+    private fun tileLayout(content: RingContent, theme: AppTheme): LayoutElement {
         val open = ModifiersBuilders.Clickable.Builder()
             .setId("open_app")
             .setOnClick(ActionBuilders.launchAction(ComponentName(this, MainActivity::class.java)))
             .build()
-        val outerColor = if (content.goalMet) RingColors.GOAL_MET else RingColors.TODAY
+        val outerColor = if (content.goalMet) theme.goalMet else theme.today
 
         return Box.Builder()
             .setWidth(expand())
             .setHeight(expand())
             .setModifiers(ModifiersBuilders.Modifiers.Builder().setClickable(open).build())
-            .addContent(ring(content.todayProgress, outerColor, OUTER_THICKNESS_DP))
+            .addContent(ring(content.todayProgress, outerColor, theme.track, OUTER_THICKNESS_DP))
             .addContent(
                 Box.Builder()
                     .setWidth(expand())
                     .setHeight(expand())
                     .setModifiers(paddingAll(OUTER_THICKNESS_DP + RING_GAP_DP))
-                    .addContent(ring(content.slotProgress, RingColors.SLOT, INNER_THICKNESS_DP))
+                    .addContent(ring(content.slotProgress, theme.slot, theme.track, INNER_THICKNESS_DP))
                     .build(),
             )
-            .addContent(textColumn(content, outerColor))
+            .addContent(textColumn(content, outerColor, theme.slot))
             .build()
     }
 
     /** A full-circle track with the progress arc drawn over it, starting at 12 o'clock. */
-    private fun ring(progress: Float, color: Long, thickness: Float): LayoutElement {
+    private fun ring(progress: Float, color: Long, track: Long, thickness: Float): LayoutElement {
         val box = Box.Builder().setWidth(expand()).setHeight(expand())
-            .addContent(arc(360f, RingColors.TRACK, thickness))
+            .addContent(arc(360f, track, thickness))
         if (progress > 0f) box.addContent(arc(360f * progress, color, thickness))
         return box.build()
     }
@@ -111,12 +113,12 @@ class HourlyStepsTileService : TileService() {
             )
             .build()
 
-    private fun textColumn(content: RingContent, outerColor: Long): LayoutElement {
+    private fun textColumn(content: RingContent, outerColor: Long, slotColor: Long): LayoutElement {
         val column = Column.Builder().setWidth(wrap()).setHeight(wrap())
         content.title?.let { column.addContent(text(it, 13f, outerColor, bold = true)) }
         column.addContent(text(content.value, 34f, RingColors.TEXT, bold = true))
         content.valueCaption?.let {
-            column.addContent(text(it, 12f, if (content.captionIsSlot) RingColors.SLOT else RingColors.TEXT_DIM))
+            column.addContent(text(it, 12f, if (content.captionIsSlot) slotColor else RingColors.TEXT_DIM))
         }
         content.todayLine?.let { column.addContent(text(it, 12f, outerColor)) }
         (content.catchUpLine ?: content.detailLine)?.let { column.addContent(text(it, 11f, RingColors.TEXT_DIM)) }

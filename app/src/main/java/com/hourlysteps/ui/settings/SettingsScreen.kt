@@ -37,6 +37,7 @@ fun SettingsScreen(
     onOpenPlan: (PlanId) -> Unit,
     onOpenWeek: () -> Unit,
     onOpenPause: () -> Unit,
+    onOpenTheme: () -> Unit,
     onPickInactivity: () -> Unit,
     onOpenPermissions: () -> Unit,
 ) {
@@ -214,6 +215,16 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Daily goal") },
                     secondaryLabel = { Text("Gold fireworks and your streak") },
+                )
+            }
+
+            item { ListHeader { Text("Appearance") } }
+            item {
+                FilledTonalButton(
+                    onClick = onOpenTheme,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Theme") },
+                    secondaryLabel = { Text(settings.theme.label) },
                 )
             }
 

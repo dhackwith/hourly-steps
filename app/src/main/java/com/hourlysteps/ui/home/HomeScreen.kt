@@ -33,8 +33,8 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.drawCircularProgressIndicator
 import com.hourlysteps.domain.DayStatus
 import com.hourlysteps.domain.DayStatusKind
-import com.hourlysteps.surfaces.RingColors
 import com.hourlysteps.surfaces.ringContent
+import com.hourlysteps.ui.LocalAppTheme
 
 private const val PAGE_COUNT = 3
 
@@ -64,8 +64,9 @@ fun HomeScreen(viewModel: HomeViewModel, onOpenSettings: () -> Unit) {
 fun HomeContent(status: DayStatus, pagerState: PagerState, onResume: () -> Unit, onOpenSettings: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val content = ringContent(status)
-    val todayColor = Color(if (content.goalMet) RingColors.GOAL_MET else RingColors.TODAY)
-    val slotColor = Color(RingColors.SLOT)
+    val theme = LocalAppTheme.current
+    val todayColor = Color(if (content.goalMet) theme.goalMet else theme.today)
+    val slotColor = Color(theme.slot)
 
     Box(modifier = Modifier.fillMaxSize()) {
         Ring(content.todayProgress, todayColor, Modifier.padding(4.dp))
@@ -124,7 +125,7 @@ private val RingGap = 3.dp
  */
 @Composable
 private fun Ring(progress: Float, color: Color, modifier: Modifier) {
-    val ringColors = ProgressIndicatorDefaults.colors(indicatorColor = color, trackColor = Color(RingColors.TRACK))
+    val ringColors = ProgressIndicatorDefaults.colors(indicatorColor = color, trackColor = Color(LocalAppTheme.current.track))
     Spacer(
         modifier = modifier
             .fillMaxSize()

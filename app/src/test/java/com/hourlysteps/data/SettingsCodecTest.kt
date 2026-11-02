@@ -2,8 +2,10 @@ package com.hourlysteps.data
 
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import com.hourlysteps.data.settings.SettingsCodec
+import com.hourlysteps.domain.AppTheme
 import com.hourlysteps.domain.DayAssignment
 import com.hourlysteps.domain.DayPlan
 import com.hourlysteps.domain.Schedule
@@ -94,6 +96,7 @@ class SettingsCodecTest {
             skipWhileAsleep = false,
             secondNudge = true,
             celebrateDaily = false,
+            theme = AppTheme.OCEAN,
         )
         assertEquals(settings, roundTrip(settings))
     }
@@ -110,6 +113,12 @@ class SettingsCodecTest {
         SettingsCodec.write(prefs, Settings(pausedThrough = LocalDate.of(2026, 11, 8)))
         SettingsCodec.write(prefs, Settings(pausedThrough = null))
         assertNull(SettingsCodec.read(prefs).pausedThrough)
+    }
+
+    @Test
+    fun `an unknown theme falls back to the default`() {
+        val prefs = mutablePreferencesOf(stringPreferencesKey("theme") to "NEON")
+        assertEquals(AppTheme.DEFAULT, SettingsCodec.read(prefs).theme)
     }
 
     @Test

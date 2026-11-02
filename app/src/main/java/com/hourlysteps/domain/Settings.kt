@@ -20,6 +20,7 @@ data class Settings(
     /** Vibrate and show a celebration when this slot's goal is reached. */
     val celebrate: Boolean = true,
     val celebrateDaily: Boolean = true,
+    val theme: AppTheme = AppTheme.DEFAULT,
 ) {
     fun isPaused(date: LocalDate): Boolean = pausedThrough != null && !date.isAfter(pausedThrough)
 

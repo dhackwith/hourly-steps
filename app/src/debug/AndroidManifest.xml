@@ -30,5 +30,14 @@
                 <action android:name="com.hourlysteps.debug.SET_STREAK_HISTORY" />
             </intent-filter>
         </receiver>
+        <!-- Debug builds only: lets adb switch theme. -->
+        <receiver
+            android:name=".debug.DebugThemeReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.hourlysteps.debug.SET_THEME" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

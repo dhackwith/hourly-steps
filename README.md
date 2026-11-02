@@ -30,6 +30,9 @@ different rhythm? Reminders can also come every 30 minutes or every 2 hours.
   minutes before each two-hour block ends (1,167). All the text follows: "this half hour", "this
   hour", "these two hours". If your hours don't divide evenly into two-hour blocks, the last one is
   a single hour with the same goal as the others.
+- **Themes** recolour the rings, buttons, tile and fireworks. Pick from Violet (light purple and
+  violet, the default), Classic, Ocean, Forest, Sunset, Rose or Graphite in Settings. Tapping one
+  applies it straight away, so it's easy to try them all.
 - Reminders stay out of the way: they skip during tracked workouts and sleep, have **Snooze 5 min**
   and **Pause today** buttons, and can optionally buzz once more near the end of the hour with
   **Second nudge**. A skipped reminder is explained on the Today page.
@@ -79,6 +82,12 @@ past days, oldest first, ending yesterday:
 
 ```bash
 adb shell am broadcast -a com.hourlysteps.debug.SET_STREAK_HISTORY --es days MET,MET,MISSED,MET,REST,MET,MET -p com.hourlysteps
+```
+
+To compare themes without going through Settings:
+
+```bash
+adb shell am broadcast -a com.hourlysteps.debug.SET_THEME --es theme OCEAN -p com.hourlysteps
 ```
 
 Sleep comes from Health Services' synthetic events. No workout app is on the emulator, so debug
@@ -168,9 +177,9 @@ real watch, add the tile from the tile list and pick complications in the watch 
 
 | Package | Role |
 |---|---|
-| `domain` | Pure logic: schedule and slots, goal maths, catch-up pace, check decision, next-alarm time, day status, today summary, wording for each interval. Fully unit-tested. |
+| `domain` | Pure logic: themes, schedule and slots, goal maths, catch-up pace, check decision, next-alarm time, day status, today summary, wording for each interval. Fully unit-tested. |
 | `data` | Settings (DataStore), raw step points and check log (Room), Health Services passive listener. |
 | `reminder` | Exact-alarm chain, the slot check, notifications and vibration, reschedule on boot/time change. |
 | `celebration` | Goal celebration trigger, fireworks screen. |
 | `surfaces` | Tile, complications, and the ring and complication text they share with Home. |
-| `ui` | Compose for Wear OS Material 3: Home rings, Today page, Settings, plan and week editors, pause, pickers, permissions. |
+| `ui` | Compose for Wear OS Material 3: Home rings, Today page, Settings, plan and week editors, pause, theme picker, pickers, permissions. |

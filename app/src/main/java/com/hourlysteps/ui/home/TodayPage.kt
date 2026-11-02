@@ -24,7 +24,7 @@ import com.hourlysteps.domain.SlotOutcome
 import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.domain.SlotRow
 import com.hourlysteps.domain.TodaySummary
-import com.hourlysteps.surfaces.RingColors
+import com.hourlysteps.ui.LocalAppTheme
 import com.hourlysteps.ui.formatSteps
 import com.hourlysteps.ui.formatTime
 import java.time.Instant
@@ -89,7 +89,7 @@ private fun SlotRowItem(row: SlotRow) {
     val current = row.outcome == SlotOutcome.IN_PROGRESS
     val dim = row.outcome == SlotOutcome.UPCOMING || row.outcome == SlotOutcome.GOAL_ALREADY_MET
     val mainColor = when {
-        current -> Color(RingColors.SLOT)
+        current -> Color(LocalAppTheme.current.slot)
         dim -> colors.onSurfaceVariant
         else -> colors.onSurface
     }
@@ -137,8 +137,8 @@ private fun glyph(outcome: SlotOutcome): String = when (outcome) {
 
 @Composable
 private fun glyphColor(outcome: SlotOutcome): Color = when (outcome) {
-    SlotOutcome.HIT -> Color(RingColors.GOAL_MET)
+    SlotOutcome.HIT -> Color(LocalAppTheme.current.goalMet)
     SlotOutcome.SHORT -> MaterialTheme.colorScheme.error
-    SlotOutcome.IN_PROGRESS -> Color(RingColors.SLOT)
+    SlotOutcome.IN_PROGRESS -> Color(LocalAppTheme.current.slot)
     else -> MaterialTheme.colorScheme.onSurfaceVariant
 }

@@ -30,12 +30,14 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.hourlysteps.HourlyStepsApp
 import com.hourlysteps.domain.Celebration
 import com.hourlysteps.domain.CelebrationKind
 import com.hourlysteps.domain.Settings
 import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.domain.Streaks
-import com.hourlysteps.surfaces.RingColors
+import com.hourlysteps.ui.HourlyStepsTheme
+import com.hourlysteps.ui.LocalAppTheme
 import com.hourlysteps.ui.formatSteps
 import kotlinx.coroutines.delay
 
@@ -60,7 +62,7 @@ class CelebrationActivity : ComponentActivity() {
         ) == 0f
 
         setContent {
-            MaterialTheme {
+            HourlyStepsTheme((application as HourlyStepsApp).container) {
                 CelebrationScreen(celebration, reduceMotion, onDone = ::finish)
             }
         }
@@ -106,7 +108,8 @@ private const val SHOW_DAILY_FOR_MS = 10_000L
 fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val isDaily = celebration.kind == CelebrationKind.DAILY_GOAL
-    val gold = Color(RingColors.GOAL_MET)
+    val theme = LocalAppTheme.current
+    val gold = Color(theme.goalMet)
     val scale = remember { Animatable(if (reduceMotion) 1f else 0.4f) }
     LaunchedEffect(Unit) {
         if (!reduceMotion) {
@@ -125,6 +128,11 @@ fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: (
         contentAlignment = Alignment.Center,
     ) {
         Fireworks(
+            colors = if (isDaily) {
+                GoldFireworkColors
+            } else {
+                listOf(theme.today, theme.slot, theme.goalMet, theme.onPrimaryContainer, 0xFFFFFFFF).map { Color(it) }
+            },
             modifier = Modifier.fillMaxSize(),
             animate = !reduceMotion,
             style = if (isDaily) FireworkStyle.GOLD else FireworkStyle.STANDARD,

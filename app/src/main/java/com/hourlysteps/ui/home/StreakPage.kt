@@ -23,14 +23,14 @@ import androidx.wear.compose.material3.Text
 import com.hourlysteps.domain.DayResult
 import com.hourlysteps.domain.StreakDay
 import com.hourlysteps.domain.StreakInfo
-import com.hourlysteps.surfaces.RingColors
+import com.hourlysteps.ui.LocalAppTheme
 import java.time.format.TextStyle
 
 /** The current streak, the record, and the last seven days at a glance. */
 @Composable
 fun StreakPage(streak: StreakInfo) {
     val colors = MaterialTheme.colorScheme
-    val gold = Color(RingColors.GOAL_MET)
+    val gold = Color(LocalAppTheme.current.goalMet)
 
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 24.dp),
@@ -77,7 +77,8 @@ private fun statusLine(streak: StreakInfo): String = when (streak.todayResult) {
 @Composable
 private fun DayCell(day: StreakDay) {
     val colors = MaterialTheme.colorScheme
-    val gold = Color(RingColors.GOAL_MET)
+    val theme = LocalAppTheme.current
+    val gold = Color(theme.goalMet)
     val locale = LocalConfiguration.current.locales[0]
     val letter = day.date.dayOfWeek.getDisplayName(TextStyle.NARROW, locale)
 
@@ -85,13 +86,13 @@ private fun DayCell(day: StreakDay) {
         Text(
             letter,
             fontSize = 11.sp,
-            color = if (day.isToday) Color(RingColors.SLOT) else colors.onSurfaceVariant,
+            color = if (day.isToday) Color(theme.slot) else colors.onSurfaceVariant,
         )
         val base = Modifier.size(22.dp)
         val cell = when (day.result) {
             DayResult.MET -> base.background(gold, CircleShape)
-            DayResult.MISSED, DayResult.REST -> base.background(Color(RingColors.TRACK), CircleShape)
-            null -> if (day.isToday) base.border(2.dp, Color(RingColors.SLOT), CircleShape) else base
+            DayResult.MISSED, DayResult.REST -> base.background(Color(theme.track), CircleShape)
+            null -> if (day.isToday) base.border(2.dp, Color(theme.slot), CircleShape) else base
         }
         Box(cell, contentAlignment = Alignment.Center) {
             val (mark, markColor) = when (day.result) {

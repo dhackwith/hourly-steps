@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.hourlysteps.domain.AppTheme
 import com.hourlysteps.domain.DayAssignment
 import com.hourlysteps.domain.DayPlan
 import com.hourlysteps.domain.Schedule
@@ -47,6 +48,7 @@ object SettingsCodec {
         val SKIP_WORKOUTS = booleanPreferencesKey("skip_during_workouts")
         val SKIP_ASLEEP = booleanPreferencesKey("skip_while_asleep")
         val SECOND_NUDGE = booleanPreferencesKey("second_nudge")
+        val THEME = stringPreferencesKey("theme")
     }
 
     fun read(prefs: Preferences): Settings {
@@ -89,6 +91,9 @@ object SettingsCodec {
             skipDuringWorkouts = prefs[Keys.SKIP_WORKOUTS] ?: defaults.skipDuringWorkouts,
             skipWhileAsleep = prefs[Keys.SKIP_ASLEEP] ?: defaults.skipWhileAsleep,
             secondNudge = prefs[Keys.SECOND_NUDGE] ?: defaults.secondNudge,
+            theme = prefs[Keys.THEME]
+                ?.let { runCatching { AppTheme.valueOf(it) }.getOrNull() }
+                ?: defaults.theme,
         )
     }
 
@@ -122,6 +127,7 @@ object SettingsCodec {
         prefs[Keys.SKIP_WORKOUTS] = s.skipDuringWorkouts
         prefs[Keys.SKIP_ASLEEP] = s.skipWhileAsleep
         prefs[Keys.SECOND_NUDGE] = s.secondNudge
+        prefs[Keys.THEME] = s.theme.name
     }
 
     /** Seven characters, Monday first: A, B or O. */

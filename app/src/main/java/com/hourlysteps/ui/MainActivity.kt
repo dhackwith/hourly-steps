@@ -11,7 +11,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.wear.compose.material3.AppScaffold
-import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
@@ -25,6 +24,7 @@ import com.hourlysteps.ui.settings.PauseScreen
 import com.hourlysteps.ui.settings.PickerTarget
 import com.hourlysteps.ui.settings.PlanEditorScreen
 import com.hourlysteps.ui.settings.SettingsScreen
+import com.hourlysteps.ui.settings.ThemeScreen
 import com.hourlysteps.ui.settings.ValuePickerScreen
 import com.hourlysteps.ui.settings.WeekEditorScreen
 import kotlinx.coroutines.launch
@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val startOnPermissions = !container.hasActivityRecognition()
         setContent {
-            MaterialTheme {
+            HourlyStepsTheme(container) {
                 AppScaffold {
                     HourlyStepsNavHost(container, startOnPermissions)
                 }
@@ -71,6 +71,7 @@ private object Routes {
     const val PERMISSIONS = "permissions"
     const val WEEK = "week"
     const val PAUSE = "pause"
+    const val THEME = "theme"
     const val PLAN = "plan/{plan}"
     const val PICKER = "picker/{target}/{plan}"
     fun plan(id: PlanId) = "plan/${id.name}"
@@ -106,6 +107,7 @@ private fun HourlyStepsNavHost(container: AppContainer, startOnPermissions: Bool
                 onOpenPlan = { navController.navigate(Routes.plan(it)) },
                 onOpenWeek = { navController.navigate(Routes.WEEK) },
                 onOpenPause = { navController.navigate(Routes.PAUSE) },
+                onOpenTheme = { navController.navigate(Routes.THEME) },
                 onPickInactivity = { navController.navigate(Routes.picker(PickerTarget.INACTIVITY_THRESHOLD)) },
                 onOpenPermissions = { navController.navigate(Routes.PERMISSIONS) },
             )
@@ -120,6 +122,7 @@ private fun HourlyStepsNavHost(container: AppContainer, startOnPermissions: Bool
         }
         composable(Routes.WEEK) { WeekEditorScreen(container) }
         composable(Routes.PAUSE) { PauseScreen(container, onDone = { navController.popBackStack() }) }
+        composable(Routes.THEME) { ThemeScreen(container) }
         composable(Routes.PICKER) { entry ->
             val target = entry.arguments?.getString("target")
                 ?.let { runCatching { PickerTarget.valueOf(it) }.getOrNull() }

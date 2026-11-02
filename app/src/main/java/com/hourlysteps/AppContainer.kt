@@ -17,6 +17,7 @@ import com.hourlysteps.data.steps.ActivityStore
 import com.hourlysteps.data.steps.DayStatusProvider
 import com.hourlysteps.data.steps.StepsRepository
 import com.hourlysteps.data.steps.StreakRepository
+import com.hourlysteps.domain.AppTheme
 import com.hourlysteps.domain.CheckRecord
 import com.hourlysteps.domain.SystemZoneClock
 import com.hourlysteps.reminder.ReminderCheck
@@ -131,6 +132,12 @@ class AppContainer(private val context: Context) {
         reminderNotifier.cancel()
         reminderScheduler.cancelFollowUp()
         ensureArmed()
+    }
+
+    /** Changes the colours. The tile holds its own copy of them, so it needs telling. */
+    suspend fun setTheme(theme: AppTheme) {
+        settingsRepository.update { it.copy(theme = theme) }
+        surfaceUpdater.updateNow()
     }
 
     /** The "Pause today" button on a reminder. */
