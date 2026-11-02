@@ -16,7 +16,7 @@ private const val TAG = "ReminderScheduler"
 /** Why a reminder is coming back: the optional second nudge, or the wearer pressed Snooze. */
 enum class FollowUpKind { SECOND_NUDGE, SNOOZE }
 
-/** Arms the single one-shot alarm for the next slot check. */
+/** Arms the one-shot alarms for the next slot check and the next slot change. */
 class ReminderScheduler(
     private val context: Context,
     private val settingsRepository: SettingsRepository,
@@ -40,12 +40,38 @@ class ReminderScheduler(
         } else {
             schedule(next)
         }
+        scheduleSlotChange()
         return next
     }
 
     fun cancel() {
         alarmManager.cancel(pendingIntent(0L))
+        alarmManager.cancel(slotChangeIntent())
     }
+
+    /** Arms the refresh of the tile and complications for when the current slot changes. */
+    suspend fun scheduleSlotChange() {
+        val next = ReminderSchedule.nextSlotChange(ZonedDateTime.now(clock), settingsRepository.current())
+        if (next == null) {
+            alarmManager.cancel(slotChangeIntent())
+            return
+        }
+        val millis = next.toInstant().toEpochMilli()
+        if (canScheduleExact()) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, slotChangeIntent())
+        } else {
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, slotChangeIntent())
+        }
+        Log.d(TAG, "Slot change scheduled for $next")
+    }
+
+    private fun slotChangeIntent(): PendingIntent =
+        PendingIntent.getBroadcast(
+            context,
+            SLOT_CHANGE_REQUEST_CODE,
+            Intent(context, ReminderReceiver::class.java).setAction(ReminderReceiver.ACTION_SLOT_CHANGE),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
 
     /**
      * Arms a reminder to come back later in the slot, replacing any already armed. Without the
@@ -128,6 +154,7 @@ class ReminderScheduler(
     private companion object {
         const val REQUEST_CODE = 1
         const val STEP_CHECK_REQUEST_CODE = 4
+        const val SLOT_CHANGE_REQUEST_CODE = 5
         const val STEP_CHECK_DELAY_MS = 60_000L
         const val FOLLOW_UP_REQUEST_CODE = 3
         const val FALLBACK_WINDOW_MS = 10 * 60 * 1000L

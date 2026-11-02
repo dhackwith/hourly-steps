@@ -9,7 +9,18 @@ object ReminderSchedule {
      * none is coming: every day is off, or reminders are paused until resumed. DST gaps are
      * handled by the zone conversion, which shifts a non-existent local time forward.
      */
-    fun nextCheckTime(now: ZonedDateTime, settings: Settings): ZonedDateTime? {
+    fun nextCheckTime(now: ZonedDateTime, settings: Settings): ZonedDateTime? =
+        firstAfter(now, settings) { listOf(it.checkAt(now.zone)) }
+
+    /**
+     * The next moment a slot starts or ends strictly after [now], when what the tile and
+     * complications show goes out of date whether or not any steps arrive. Skips the same days as
+     * [nextCheckTime].
+     */
+    fun nextSlotChange(now: ZonedDateTime, settings: Settings): ZonedDateTime? =
+        firstAfter(now, settings) { listOf(it.startAt(now.zone), it.endAt(now.zone)) }
+
+    private fun firstAfter(now: ZonedDateTime, settings: Settings, times: (Slot) -> List<ZonedDateTime>): ZonedDateTime? {
         val paused = settings.pausedThrough
         if (paused == Settings.PAUSED_UNTIL_RESUMED) return null
 
@@ -19,8 +30,7 @@ object ReminderSchedule {
         repeat(8) {
             settings.schedule.planFor(day.dayOfWeek)?.let { plan ->
                 for (slot in Slots.forDay(plan, settings.schedule.slotMinutes, day)) {
-                    val check = slot.checkAt(now.zone)
-                    if (check.isAfter(now)) return check
+                    times(slot).firstOrNull { it.isAfter(now) }?.let { return it }
                 }
             }
             day = day.plusDays(1)

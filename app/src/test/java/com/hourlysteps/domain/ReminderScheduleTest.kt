@@ -31,6 +31,55 @@ class ReminderScheduleTest {
     }
 
     @Test
+    fun `the next slot change is the top of the next hour`() {
+        assertEquals(at(day, 14, 0), ReminderSchedule.nextSlotChange(at(day, 13, 8), defaults))
+    }
+
+    @Test
+    fun `exactly at a slot change goes to the next one`() {
+        assertEquals(at(day, 14, 0), ReminderSchedule.nextSlotChange(at(day, 13, 0), defaults))
+    }
+
+    @Test
+    fun `the first slot starting is a slot change`() {
+        assertEquals(at(day, 8, 0), ReminderSchedule.nextSlotChange(at(day, 6, 30), defaults))
+    }
+
+    @Test
+    fun `the last slot ending is a slot change`() {
+        assertEquals(at(day, 20, 0), ReminderSchedule.nextSlotChange(at(day, 19, 30), defaults))
+    }
+
+    @Test
+    fun `after the window the next slot change is tomorrow's first`() {
+        assertEquals(at(day.plusDays(1), 8, 0), ReminderSchedule.nextSlotChange(at(day, 20, 0), defaults))
+    }
+
+    @Test
+    fun `slot changes follow the interval`() {
+        val half = defaults.copy(schedule = defaults.schedule.copy(slotMinutes = 30))
+        assertEquals(at(day, 13, 30), ReminderSchedule.nextSlotChange(at(day, 13, 8), half))
+        val two = defaults.copy(schedule = defaults.schedule.copy(slotMinutes = 120))
+        assertEquals(at(day, 14, 0), ReminderSchedule.nextSlotChange(at(day, 13, 8), two))
+    }
+
+    @Test
+    fun `a short last slot ends with the window`() {
+        val two = defaults.copy(schedule = defaults.schedule.copy(planA = DayPlan(endMinute = 19 * 60), slotMinutes = 120))
+        assertEquals(at(day, 19, 0), ReminderSchedule.nextSlotChange(at(day, 18, 10), two))
+    }
+
+    @Test
+    fun `there are no slot changes while paused until resumed`() {
+        assertNull(ReminderSchedule.nextSlotChange(at(day, 13, 8), defaults.copy(pausedThrough = Settings.PAUSED_UNTIL_RESUMED)))
+    }
+
+    @Test
+    fun `a paused day has no slot changes`() {
+        assertEquals(at(day.plusDays(1), 8, 0), ReminderSchedule.nextSlotChange(at(day, 13, 8), defaults.copy(pausedThrough = day)))
+    }
+
+    @Test
     fun `before the window goes to the first slot today`() {
         assertEquals(at(day, 8, 50), ReminderSchedule.nextCheckTime(at(day, 6, 0), defaults))
     }

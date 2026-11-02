@@ -21,6 +21,7 @@ different rhythm? Reminders can also come every 30 minutes or every 2 hours.
   [Install on the watch](#install-on-the-watch). Without it, or during Do Not Disturb or Bedtime
   mode, you get a "🎉 Hourly goal achieved!" notification instead, and Do Not Disturb and Bedtime
   mode also leave the screen asleep.
+- The tile and complications start each hour's count when the hour starts, even if you aren't walking.
 - The watch hands steps to the app in batches that can be minutes apart. Within 400 steps of a goal the
   app asks for them about once a minute while you keep walking, so the moment lands close to the real
   one. A screen that opened by itself also leaves a silent notification for an hour, in case you missed it.
