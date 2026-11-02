@@ -77,7 +77,8 @@ adb -s <watch-address> shell cmd package compile -m speed-profile -f com.hourlys
 
 To have goal screens open by themselves instead of as a notification, allow the app to display over
 other apps. Android asks this of any background app opening a screen. Wear OS has no settings page
-for it, so it can only be set with adb. It lasts through updates but not an uninstall:
+for it, so it can only be set with adb. It lasts through updates, but not an uninstall or installing
+a build from before this permission was added:
 
 ```bash
 adb -s <watch-address> shell appops set com.hourlysteps SYSTEM_ALERT_WINDOW allow
