@@ -9,6 +9,10 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Lets the celebration screen take over a sleeping watch screen, like an alarm. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Android 14+: needed for the brief screen wake when a goal is reached. -->
+    <uses-permission android:name="android.permission.TURN_SCREEN_ON" />
 
     <application
         android:name=".HourlyStepsApp"
@@ -31,6 +35,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".celebration.CelebrationActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleTop"
+            android:taskAffinity="com.hourlysteps.celebration"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
 
         <service
             android:name=".data.steps.StepsPassiveListenerService"

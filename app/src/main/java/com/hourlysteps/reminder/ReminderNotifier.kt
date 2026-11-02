@@ -5,10 +5,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import com.hourlysteps.R
 import com.hourlysteps.data.settings.SettingsRepository
@@ -50,7 +46,17 @@ class ReminderNotifier(
             description = context.getString(R.string.channel_inactivity_description)
             enableVibration(true)
         }
-        notificationManager.createNotificationChannels(listOf(goal, inactivity))
+        val celebration = NotificationChannel(
+            CHANNEL_CELEBRATION,
+            context.getString(R.string.channel_celebration_name),
+            NotificationManager.IMPORTANCE_HIGH,
+        ).apply {
+            description = context.getString(R.string.channel_celebration_description)
+            enableVibration(true)
+            // The system plays the channel pattern when it alerts, so give it the celebration feel.
+            vibrationPattern = Haptics.celebrationPattern(VibrationStrength.SHORT)
+        }
+        notificationManager.createNotificationChannels(listOf(goal, inactivity, celebration))
     }
 
     fun show(result: CheckResult, settings: Settings, now: ZonedDateTime) {
@@ -119,23 +125,13 @@ class ReminderNotifier(
     }
 
     private fun vibrate(strength: VibrationStrength) {
-        val pattern = when (strength) {
-            VibrationStrength.OFF -> return
-            VibrationStrength.SHORT -> longArrayOf(0, 200, 100, 200)
-            VibrationStrength.LONG -> longArrayOf(0, 400, 150, 400, 150, 400)
-        }
-        val vibrator: Vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService(VibratorManager::class.java).defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Vibrator::class.java)
-        }
-        vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+        Haptics.vibrate(context, Haptics.reminderPattern(strength))
     }
 
     companion object {
         const val CHANNEL_GOAL = "hourly_goal"
         const val CHANNEL_INACTIVITY = "inactivity"
+        const val CHANNEL_CELEBRATION = "celebration"
         const val NOTIFICATION_ID = 1001
     }
 }

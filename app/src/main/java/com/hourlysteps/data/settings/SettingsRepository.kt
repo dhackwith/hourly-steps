@@ -29,6 +29,7 @@ class SettingsRepository(private val context: Context) {
         val INACTIVITY_THRESHOLD = intPreferencesKey("inactivity_threshold")
         val VIBRATION = stringPreferencesKey("vibration")
         val SKIP_WHILE_CHARGING = booleanPreferencesKey("skip_while_charging")
+        val CELEBRATE = booleanPreferencesKey("celebrate")
     }
 
     val settings: Flow<Settings> = context.settingsDataStore.data
@@ -53,6 +54,7 @@ class SettingsRepository(private val context: Context) {
                 ?.let { runCatching { VibrationStrength.valueOf(it) }.getOrNull() }
                 ?: defaults.vibration,
             skipWhileCharging = prefs[Keys.SKIP_WHILE_CHARGING] ?: defaults.skipWhileCharging,
+            celebrate = prefs[Keys.CELEBRATE] ?: defaults.celebrate,
         )
     }
 
@@ -64,5 +66,6 @@ class SettingsRepository(private val context: Context) {
         prefs[Keys.INACTIVITY_THRESHOLD] = s.inactivityThreshold
         prefs[Keys.VIBRATION] = s.vibration.name
         prefs[Keys.SKIP_WHILE_CHARGING] = s.skipWhileCharging
+        prefs[Keys.CELEBRATE] = s.celebrate
     }
 }

@@ -55,6 +55,32 @@ make the catch-up figure the live threshold instead. Off the table for v1.) When
 the same two numbers: the ring is this hour against the hourly goal, with a caption
 "660/hr to catch up" when applicable.
 
+### Hourly goal celebration
+
+Modelled on the Pixel Watch's built-in hourly reminder, which buzzes and shows a celebration
+when the hour's goal is reached.
+
+- **When.** The first time in an hour that this hour's steps reach the target, checked after
+  every batch of step data. Once per hour, only inside the reminder window, and only when the
+  **Celebrate goals** setting is on (default on).
+- **Target.** The hourly goal while the daily goal was still open at the start of the hour. After
+  the daily goal is met, the inactivity threshold if inactivity reminders are on; otherwise no
+  celebration. Basing this on the total at the start of the hour means the batch that crosses
+  the hourly and daily goals together still celebrates the hour.
+- **What the user sees.**
+  - App open: the fireworks screen opens immediately.
+  - Watch face showing: a "da-da-daaa" buzz and a "🎉 Hourly goal achieved!" alert; tapping it
+    opens the fireworks.
+  - Screen asleep (always-on): the screen is lit for a few seconds, then the same buzz and
+    alert appear. Skipped while Do Not Disturb or Bedtime filters notifications.
+- **Fireworks screen.** Looping bursts drawn on a Canvas, "Hourly goal achieved!", the steps this
+  hour and today's total. Closes on tap, swipe, or after 7 seconds. With system animations off it
+  shows a still frame.
+- **Platform limit.** Third-party Wear OS apps cannot open a full-screen activity from the
+  background. Full-screen intents are ignored while the watch is in always-on mode, and become an
+  ordinary alert when the screen is on. So the fireworks need one tap unless the app is open. The
+  notification still carries a full-screen intent in case a future Wear OS release honours it.
+
 ### Slot counting (decided)
 
 Slots are counted inclusively: every :50 from the first reminder hour to the last reminder
@@ -195,6 +221,8 @@ app/
 | `POST_NOTIFICATIONS` | runtime | onboarding |
 | `SCHEDULE_EXACT_ALARM` | special access (settings deep link) | onboarding, with explanation and "continue without" |
 | `RECEIVE_BOOT_COMPLETED`, `VIBRATE`, `WAKE_LOCK` | normal | manifest |
+| `TURN_SCREEN_ON` | normal (API 34+) | manifest; lets the celebration light a sleeping screen |
+| `USE_FULL_SCREEN_INTENT` | special access (API 34+) | manifest; granted by default when sideloaded. Google Play only allows it for alarm and calling apps, so remove it before a Play release. |
 
 Manifest also needs `<uses-feature android:name="android.hardware.type.watch" />`, the
 standalone meta-data, and the `PassiveListenerService` declared with

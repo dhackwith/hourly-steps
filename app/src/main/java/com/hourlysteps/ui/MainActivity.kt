@@ -40,6 +40,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        container.uiVisible = true
+    }
+
+    override fun onStop() {
+        container.uiVisible = false
+        super.onStop()
+    }
+
     override fun onResume() {
         super.onResume()
         // Recover from force-stop, pick up permission changes, and pull fresh steps for the UI.

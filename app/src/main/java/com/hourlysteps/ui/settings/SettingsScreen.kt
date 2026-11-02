@@ -17,6 +17,8 @@ import androidx.wear.compose.material3.SwitchButton
 import androidx.wear.compose.material3.Text
 import com.hourlysteps.AppContainer
 import com.hourlysteps.BuildConfig
+import com.hourlysteps.domain.Celebration
+import com.hourlysteps.domain.CelebrationKind
 import com.hourlysteps.domain.GoalCalculator
 import com.hourlysteps.domain.Settings
 import com.hourlysteps.domain.VibrationStrength
@@ -114,6 +116,16 @@ fun SettingsScreen(
             }
 
             item {
+                SwitchButton(
+                    checked = settings.celebrate,
+                    onCheckedChange = { checked -> update { it.copy(celebrate = checked) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Celebrate goals") },
+                    secondaryLabel = { Text("Fireworks when you hit the hour") },
+                )
+            }
+
+            item {
                 FilledTonalButton(
                     onClick = {
                         val next = VibrationStrength.entries[(settings.vibration.ordinal + 1) % VibrationStrength.entries.size]
@@ -140,6 +152,25 @@ fun SettingsScreen(
                         onClick = { scope.launch { container.reminderCheck.run(scheduledAt = null, force = true) } },
                         modifier = Modifier.fillMaxWidth(),
                         label = { Text("Run check now") },
+                    )
+                }
+                item {
+                    FilledTonalButton(
+                        onClick = {
+                            scope.launch {
+                                container.celebrationManager.celebrate(
+                                    Celebration(
+                                        kind = CelebrationKind.HOURLY_GOAL,
+                                        stepsThisHour = GoalCalculator.hourlyGoal(settings) + 37,
+                                        target = GoalCalculator.hourlyGoal(settings),
+                                        todayTotal = settings.dailyGoal / 2,
+                                        dailyGoal = settings.dailyGoal,
+                                    ),
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Show celebration") },
                     )
                 }
             }

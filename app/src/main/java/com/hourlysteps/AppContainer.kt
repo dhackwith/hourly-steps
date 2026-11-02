@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.room.Room
+import com.hourlysteps.celebration.CelebrationManager
 import com.hourlysteps.data.db.AppDatabase
 import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.data.steps.StepsRepository
@@ -43,6 +44,19 @@ class AppContainer(private val context: Context) {
         scheduler = reminderScheduler,
         checkLogDao = database.checkLogDao(),
         clock = clock,
+    )
+
+    /** True while one of the app's screens is in the foreground; set by [com.hourlysteps.ui.MainActivity]. */
+    @Volatile
+    var uiVisible: Boolean = false
+
+    val celebrationManager = CelebrationManager(
+        context = context,
+        settingsRepository = settingsRepository,
+        stepsRepository = stepsRepository,
+        reminderNotifier = reminderNotifier,
+        clock = clock,
+        isUiVisible = { uiVisible },
     )
 
     fun hasActivityRecognition(): Boolean =

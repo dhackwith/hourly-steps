@@ -7,6 +7,12 @@
     <string name="channel_inactivity_name">Inactivity reminders</string>
     <string name="channel_inactivity_description">Keeps nudging you to move after today\'s goal is met.</string>
 
+    <string name="channel_celebration_name">Goal celebrations</string>
+    <string name="channel_celebration_description">Celebrates when you reach this hour\'s step goal.</string>
+    <string name="celebration_hourly_title">🎉 Hourly goal achieved!</string>
+    <string name="celebration_inactivity_title">🎉 Still moving, nice work!</string>
+    <string name="celebration_steps_this_hour">%1$s steps this hour</string>
+
     <string name="notif_title">Time to move</string>
     <plurals name="notif_more_steps">
         <item quantity="one">%1$s more step this hour</item>

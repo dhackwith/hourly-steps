@@ -7,6 +7,11 @@ when you are short of an hourly step goal derived from your daily goal.
 - When behind pace, the reminder adds the catch-up rate: `312 more steps this hour (660/hr to catch up today)`.
 - Once the daily goal is met, goal reminders stop. Optional **Inactivity reminders** keep checking
   against a smaller per-hour threshold (default 250).
+- Reaching this hour's goal is celebrated once per hour: a "da-da-daaa" buzz, then a
+  "🎉 Hourly goal achieved!" alert that opens a fireworks screen. If the app is open, the
+  fireworks show straight away. If the watch screen is asleep, it is lit briefly so the alert is
+  visible on wrist raise, unless Do Not Disturb or Bedtime mode is on. Turn it off with
+  **Celebrate goals** in Settings.
 
 Design: [docs/HourlyStepsPlan.md](docs/HourlyStepsPlan.md).
 
@@ -39,8 +44,14 @@ To exercise both sides of a check with constant walking, change the goal instead
 a high daily goal (for example 30,000) produces a shortfall reminder, a low one (1,000) puts the
 day in the goal-met state.
 
-Debug builds have a **Run check now** button at the bottom of Settings that runs the :50 check
-immediately, ignoring the charging skip.
+Debug builds have **Run check now** and **Show celebration** buttons at the bottom of Settings.
+Run check now runs the :50 check immediately, ignoring the charging skip. Show celebration opens
+the fireworks screen. To trigger a celebration from the background instead, for example with the
+watch on its face or asleep, debug builds also accept:
+
+```bash
+adb shell am broadcast -a com.hourlysteps.debug.CELEBRATE -p com.hourlysteps
+```
 
 Useful adb commands while testing:
 

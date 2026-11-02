@@ -14,6 +14,8 @@ data class Settings(
     val inactivityThreshold: Int = DEFAULT_INACTIVITY_THRESHOLD,
     val vibration: VibrationStrength = VibrationStrength.SHORT,
     val skipWhileCharging: Boolean = true,
+    /** Vibrate and show a celebration when this hour's goal is reached. */
+    val celebrate: Boolean = true,
 ) {
     companion object {
         const val DEFAULT_DAILY_GOAL = 7000
