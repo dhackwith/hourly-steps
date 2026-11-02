@@ -47,6 +47,9 @@ abstract class StepPointDao {
     @Query("SELECT COALESCE(SUM(steps), 0) FROM step_points WHERE endMillis > :fromMillis AND endMillis <= :toMillis")
     abstract fun observeSumBetween(fromMillis: Long, toMillis: Long): Flow<Int>
 
+    @Query("SELECT * FROM step_points WHERE endMillis > :fromMillis AND endMillis <= :toMillis ORDER BY endMillis")
+    abstract fun observeBetween(fromMillis: Long, toMillis: Long): Flow<List<StepPointEntity>>
+
     @Query("DELETE FROM step_points WHERE endMillis <= :beforeMillis")
     abstract suspend fun pruneBefore(beforeMillis: Long)
 }
@@ -59,6 +62,9 @@ abstract class CheckLogDao {
 
     @Query("SELECT * FROM check_log ORDER BY timeMillis DESC LIMIT :limit")
     abstract fun observeRecent(limit: Int): Flow<List<CheckLogEntity>>
+
+    @Query("SELECT * FROM check_log WHERE date = :date ORDER BY timeMillis")
+    abstract fun observeForDate(date: String): Flow<List<CheckLogEntity>>
 
     @Query("DELETE FROM check_log WHERE date < :beforeDate")
     abstract suspend fun pruneBefore(beforeDate: String)

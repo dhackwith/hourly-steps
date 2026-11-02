@@ -13,6 +13,9 @@
     <string name="celebration_inactivity_title">🎉 Still moving, nice work!</string>
     <string name="celebration_steps_this_hour">%1$s steps this hour</string>
 
+    <string name="complication_slot_label">Hourly Steps: this hour</string>
+    <string name="complication_today_label">Hourly Steps: today</string>
+
     <string name="notif_title">Time to move</string>
     <plurals name="notif_more_steps">
         <item quantity="one">%1$s more step this hour</item>

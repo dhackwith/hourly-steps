@@ -12,12 +12,14 @@ import androidx.health.services.client.data.PassiveListenerConfig
 import com.hourlysteps.data.db.StepPointDao
 import com.hourlysteps.data.db.StepPointEntity
 import com.hourlysteps.domain.Slot
+import com.hourlysteps.domain.StepPoint
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZonedDateTime
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeoutOrNull
 
 private const val TAG = "StepsRepository"
@@ -89,6 +91,10 @@ class StepsRepository(
 
     fun observeDayTotal(date: LocalDate): Flow<Int> =
         dao.observeSumBetween(dayStart(date), dayStart(date.plusDays(1)))
+
+    fun observeDayPoints(date: LocalDate): Flow<List<StepPoint>> =
+        dao.observeBetween(dayStart(date), dayStart(date.plusDays(1)))
+            .map { rows -> rows.map { StepPoint(it.endMillis, it.steps) } }
 
     suspend fun pruneOlderThan(days: Long) {
         dao.pruneBefore(dayStart(ZonedDateTime.now(clock).toLocalDate().minusDays(days)))

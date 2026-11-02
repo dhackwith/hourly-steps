@@ -14,6 +14,7 @@ import com.hourlysteps.domain.CheckMode
 import com.hourlysteps.domain.CheckResult
 import com.hourlysteps.domain.ReminderSchedule
 import com.hourlysteps.domain.Slots
+import com.hourlysteps.surfaces.SurfaceUpdater
 import java.time.Clock
 import java.time.ZonedDateTime
 
@@ -27,6 +28,7 @@ class ReminderCheck(
     private val notifier: ReminderNotifier,
     private val scheduler: ReminderScheduler,
     private val checkLogDao: CheckLogDao,
+    private val surfaceUpdater: SurfaceUpdater,
     private val clock: Clock,
 ) {
 
@@ -85,6 +87,7 @@ class ReminderCheck(
         // Re-arm from whichever is later so an alarm that fires a hair early cannot double-fire.
         val after = if (scheduledAt != null && scheduledAt.isAfter(now)) scheduledAt else now
         scheduler.ensureScheduled(after)
+        surfaceUpdater.updateNow()
 
         stepsRepository.pruneOlderThan(RETENTION_DAYS)
         checkLogDao.pruneBefore(now.toLocalDate().minusDays(RETENTION_DAYS).toString())

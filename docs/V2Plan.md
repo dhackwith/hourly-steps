@@ -156,50 +156,52 @@ day for an irregular week (e.g. A A Off B B A Off); days off and paused days ski
 
 ---
 
-## Phase B — Glanceability
+## Phase B — Glanceability (done)
 
 ### 1. Tile and watch-face complication
 
-**Tile** (`androidx.wear.tiles` 1.6.2 + `protolayout-material3` 1.4.2, both fine on API 36):
+**Tile** (`androidx.wear.tiles` 1.6.2 + `protolayout` 1.4.2, both fine on API 36):
 
-- Layout: two concentric progress arcs in different colours. The outer arc is **today** (total
-  against the daily goal, primary colour); the inner arc is **this slot** (steps against the
-  slot goal, secondary colour). Centre: the slot's step count large, "of 584" below it, then
-  "Today 3,100 / 7,000" and the catch-up line when behind. A small legend dot next to each
-  caption uses the matching arc colour so the two rings are never confused. States: slot goal
-  met (inner arc full, tinted tertiary), daily goal met (outer arc full, tertiary, centre text
-  switches to today's total), day off, paused.
-- The Home ring gains the same outer "today" arc so the app and the tile match.
-- Tap anywhere opens the app. A second tap target on "Paused" resumes.
-- Freshness: `setFreshnessIntervalMillis(5 min)` plus `TileService.getUpdater().requestUpdate()`
-  after each step batch, throttled to once a minute, and at slot boundaries.
-- Debug: Android Studio's tile preview via `@Preview` with `wear-tooling-preview`.
+- Layout: two concentric arcs drawn with core ProtoLayout. The outer arc is **today** (total
+  against the daily goal, lilac, turning amber once the goal is met); the inner arc is **this
+  slot** (steps against its target, cyan). Centre: the slot's step count large, "of 584" below
+  it, then "Today 3,100 / 7,000" and the catch-up line when behind. Each caption is coloured to
+  match its ring, so the two are never confused. Other states: goal met, day off, paused.
+- The Home screen draws the same pair with the same colours, and both use one `RingContent`,
+  so the app and the tile always match.
+- Tap anywhere opens the app. Resuming a pause happens on Home.
+- Freshness: refreshes at the slot boundary or after 5 minutes, whichever is sooner, plus
+  `TileService.getUpdater().requestUpdate()` after step batches (at most once a minute), checks
+  and settings changes.
 
-**Complication** (`watchface-complications-data-source-ktx` 1.3.0):
+**Complications** (`watchface-complications-data-source-ktx` 1.3.0): two data sources, because a
+single slot is too small for two rings. A watch face can show both side by side.
 
-- Types: `RANGED_VALUE` (this slot's progress, text "412"), `SHORT_TEXT` ("412/584"),
-  `LONG_TEXT` ("412 of 584 this hour · 3,100 today"). Complication slots are too small for
-  two rings; a second data source, "Hourly Steps · Today", offers today's total as
-  `RANGED_VALUE` so a watch face can show both side by side.
-- Tap opens the app. Update via `ComplicationDataSourceUpdateRequester.requestUpdateAll()` after
-  step batches (throttled) and at slot boundaries; the manifest declares a 60-second update
-  period as the fallback.
-- Day off / paused shows "Off" / "Paused" with the ring empty.
+- "Hourly Steps: this hour" and "Hourly Steps: today".
+- Types: `RANGED_VALUE` (a gauge with "412"), `SHORT_TEXT` ("412" titled "of 584"), and
+  `LONG_TEXT` ("412 of 584 this hour").
+- Tap opens the app. Updated with `ComplicationDataSourceUpdateRequester.requestUpdateAll()` on
+  the same triggers as the tile. The manifest declares a 5-minute update period as the fallback,
+  so a still wearer sees the new hour within 5 minutes.
+- Day off / paused shows "Off" / "Paused" with the gauge empty. "This hour" shows "--" outside
+  the reminder window.
 
-Both read the same `SlotStatus` snapshot the Home screen uses, computed by a small
-`SlotStatusProvider` so the three surfaces never disagree.
+All three read one `DayStatus`, computed in one place, so they never disagree.
 
 ### 4. Today's hours view
 
-- Home becomes a horizontal pager: **Ring** (today's Home) → **Today** → **Streak** (Phase D).
-  Wear Compose Material 3 `HorizontalPager` with the page indicator. Settings stays on the
-  edge button of the first page.
+- Home is a horizontal pager: **Rings** → **Today** → **Streak** (Phase D). Settings stays on the
+  edge button of the first page. The stock page indicator sits where that button is, so the
+  rings page draws its own dots above it.
 - **Today page:** one row per slot: time, steps / goal, and a status glyph:
-  ✓ hit · ✗ short · – skipped (charging, workout, asleep, paused, late) · ◦ upcoming. The
-  current slot is live. Tapping a skipped row shows the reason. Rows come from `step_points`
-  (steps) joined with `check_log` (outcome and skip reason).
-- Also shows "Last check 2:50 PM · 584 of 584" at the top, so a user who didn't get a reminder
-  can see whether the check ran. This is the answer to "it didn't buzz, is it broken?".
+  ✓ hit · ✗ short · – skipped or daily goal already met · • running now. A skipped row names the
+  reason inline (charging, late, paused, not checked), which is quicker on a watch than tapping
+  it. Upcoming slots show their goal. Rows come from `step_points` joined with `check_log`.
+- A slot that started with the daily goal already met is not counted as short, since no reminder
+  applied.
+- Also shows "3 of 12 hours hit" and "Last check 2:50 PM: reminded" at the top, so a user who
+  didn't get a reminder can see whether the check ran. This is the answer to "it didn't buzz, is
+  it broken?".
 
 ---
 

@@ -11,16 +11,21 @@ import com.hourlysteps.celebration.CelebrationManager
 import com.hourlysteps.data.db.AppDatabase
 import com.hourlysteps.data.db.MIGRATION_1_2
 import com.hourlysteps.data.settings.SettingsRepository
+import com.hourlysteps.data.steps.DayStatusProvider
 import com.hourlysteps.data.steps.StepsRepository
+import com.hourlysteps.domain.CheckRecord
 import com.hourlysteps.domain.SystemZoneClock
 import com.hourlysteps.reminder.ReminderCheck
 import com.hourlysteps.reminder.ReminderNotifier
 import com.hourlysteps.reminder.ReminderScheduler
+import com.hourlysteps.surfaces.SurfaceUpdater
 import java.time.Clock
 import java.time.LocalDate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 private const val TAG = "AppContainer"
 
@@ -38,6 +43,8 @@ class AppContainer(private val context: Context) {
         .build()
 
     val stepsRepository = StepsRepository(context, database.stepPointDao(), clock)
+    val dayStatusProvider = DayStatusProvider(settingsRepository, stepsRepository, clock)
+    val surfaceUpdater = SurfaceUpdater(context)
     val reminderNotifier = ReminderNotifier(context, settingsRepository, stepsRepository, clock)
     val reminderScheduler = ReminderScheduler(context, settingsRepository, clock)
     val reminderCheck = ReminderCheck(
@@ -47,8 +54,15 @@ class AppContainer(private val context: Context) {
         notifier = reminderNotifier,
         scheduler = reminderScheduler,
         checkLogDao = database.checkLogDao(),
+        surfaceUpdater = surfaceUpdater,
         clock = clock,
     )
+
+    /** Today's check outcomes, for the Today page. */
+    fun observeDayChecks(date: LocalDate): Flow<List<CheckRecord>> =
+        database.checkLogDao().observeForDate(date.toString()).map { rows ->
+            rows.map { CheckRecord(it.timeMillis, it.slotStartMinute, it.stepsInSlot, it.notified, it.skippedReason) }
+        }
 
     /** True while one of the app's screens is in the foreground; set by [com.hourlysteps.ui.MainActivity]. */
     @Volatile
@@ -79,6 +93,7 @@ class AppContainer(private val context: Context) {
      * app update, clock changes, and after settings edits.
      */
     suspend fun ensureArmed() {
+        surfaceUpdater.updateNow()
         if (!hasActivityRecognition()) {
             Log.i(TAG, "ACTIVITY_RECOGNITION not granted; reminders stay disarmed")
             reminderScheduler.cancel()

@@ -16,6 +16,9 @@ when you are short of an hourly step goal derived from your daily goal.
   hours, and set every day of the week to Plan A, Plan B or Off.
 - **Pause reminders** for the rest of today, through tomorrow, for a week, or until you resume.
   Steps keep counting.
+- See your progress without opening the app: a **tile** with two rings (today outside, this hour
+  inside), watch-face **complications** for this hour and for today, and a **Today** page (swipe
+  left on Home) showing each hour's result and why a reminder did or didn't fire.
 
 Design: [docs/HourlyStepsPlan.md](docs/HourlyStepsPlan.md). Planned v2 features: [docs/V2Plan.md](docs/V2Plan.md).
 
@@ -107,12 +110,30 @@ Wear OS only plays a notification channel's own vibration for a background app, 
 pop-up only for a channel that vibrates. A channel's pattern can't change after creation, so the
 vibration strength is part of the channel id, and "Off" uses an imperceptible 1 ms pulse.
 
+To add the tile and attach complications on an emulator:
+
+```bash
+adb shell am broadcast -a com.google.android.wearable.app.DEBUG_SURFACE --es operation add-tile --ecn component com.hourlysteps/.surfaces.HourlyStepsTileService
+```
+
+```bash
+adb shell am broadcast -a com.google.android.wearable.app.DEBUG_SURFACE --es operation set-watchface --ecn component com.google.android.wearable.watchface.rwf/com.google.android.wearable.watchface.athletica.AthleticaWatchFaceService
+```
+
+```bash
+adb shell am broadcast -a com.google.android.wearable.app.DEBUG_SURFACE --es operation set-complication --ecn component com.hourlysteps/.surfaces.TodayComplicationService --ecn watchface com.google.android.wearable.watchface.rwf/com.google.android.wearable.watchface.athletica.AthleticaWatchFaceService --ei slot 0 --ei type 5
+```
+
+In the complication command, `type` is 5 for a gauge, 3 for short text and 4 for long text. On a
+real watch, add the tile from the tile list and pick complications in the watch face editor.
+
 ## Layout
 
 | Package | Role |
 |---|---|
-| `domain` | Pure logic: schedule and slots, goal maths, catch-up pace, check decision, next-alarm time. Fully unit-tested. |
+| `domain` | Pure logic: schedule and slots, goal maths, catch-up pace, check decision, next-alarm time, day status, today summary. Fully unit-tested. |
 | `data` | Settings (DataStore), raw step points and check log (Room), Health Services passive listener. |
 | `reminder` | Exact-alarm chain, the slot check, notifications and vibration, reschedule on boot/time change. |
 | `celebration` | Goal celebration trigger, fireworks screen. |
-| `ui` | Compose for Wear OS Material 3: Home ring, Settings, plan and week editors, pause, pickers, permissions. |
+| `surfaces` | Tile, complications, and the ring and complication text they share with Home. |
+| `ui` | Compose for Wear OS Material 3: Home rings, Today page, Settings, plan and week editors, pause, pickers, permissions. |

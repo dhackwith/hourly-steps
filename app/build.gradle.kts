@@ -68,6 +68,10 @@ dependencies {
     implementation(libs.androidx.concurrent.futures.ktx)
     implementation(libs.guava)
 
+    implementation(libs.wear.tiles)
+    implementation(libs.wear.protolayout)
+    implementation(libs.wear.complications.data.source.ktx)
+
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
