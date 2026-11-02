@@ -13,7 +13,7 @@ when you are short of an hourly step goal derived from your daily goal.
   visible on wrist raise, unless Do Not Disturb or Bedtime mode is on. Turn it off with
   **Celebrate goals** in Settings.
 
-Design: [docs/HourlyStepsPlan.md](docs/HourlyStepsPlan.md).
+Design: [docs/HourlyStepsPlan.md](docs/HourlyStepsPlan.md). Planned v2 features: [docs/V2Plan.md](docs/V2Plan.md).
 
 ## Build and test
 
