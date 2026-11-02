@@ -45,14 +45,14 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val listState = rememberScalingLazyListState()
     val exactOk = container.reminderScheduler.canScheduleExact()
-    val permsOk = container.hasActivityRecognition() && container.hasNotificationPermission()
+    val permsOk = container.permissions.hasActivityRecognition() && container.permissions.hasNotificationPermission()
     val schedule = settings.schedule
     val twoPlans = schedule.mode == ScheduleMode.TWO_PLANS
 
     fun update(transform: (Settings) -> Settings) {
         scope.launch {
             container.settingsRepository.update(transform)
-            container.ensureArmed()
+            container.reminderControls.ensureArmed()
         }
     }
 
@@ -116,7 +116,7 @@ fun SettingsScreen(
                     onClick = {
                         val options = Settings.SLOT_MINUTE_OPTIONS
                         val next = options[(options.indexOf(schedule.slotMinutes) + 1) % options.size]
-                        scope.launch { container.setSlotMinutes(next) }
+                        scope.launch { container.reminderControls.setSlotMinutes(next) }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Reminder interval") },

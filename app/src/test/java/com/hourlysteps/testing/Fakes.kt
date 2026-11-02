@@ -9,10 +9,12 @@ import com.hourlysteps.domain.Celebration
 import com.hourlysteps.domain.CheckResult
 import com.hourlysteps.domain.DayPlan
 import com.hourlysteps.domain.Settings
+import com.hourlysteps.domain.SettingsEditor
 import com.hourlysteps.domain.SettingsSource
 import com.hourlysteps.domain.Slot
 import com.hourlysteps.domain.StepCheckAlarm
 import com.hourlysteps.domain.StepCounts
+import com.hourlysteps.domain.StepMonitoring
 import com.hourlysteps.domain.StreakInfo
 import com.hourlysteps.domain.StreakTracker
 import com.hourlysteps.domain.SurfaceRefresher
@@ -20,6 +22,7 @@ import com.hourlysteps.domain.UserActivity
 import com.hourlysteps.domain.VibrationStrength
 import com.hourlysteps.reminder.FollowUpKind
 import com.hourlysteps.reminder.ReminderAlarms
+import com.hourlysteps.reminder.ReminderArming
 import com.hourlysteps.reminder.ReminderPresenter
 import java.time.LocalDate
 import java.time.ZonedDateTime
@@ -36,8 +39,30 @@ class Events {
     fun count(event: String) = all.count { it == event }
 }
 
-class FakeSettings(var settings: Settings = Settings()) : SettingsSource {
+class FakeSettings(var settings: Settings = Settings()) : SettingsSource, SettingsEditor {
     override suspend fun current() = settings
+    override suspend fun update(transform: (Settings) -> Settings) {
+        settings = transform(settings)
+    }
+}
+
+class FakeStepMonitoring(private val events: Events) : StepMonitoring {
+    var fails = false
+
+    override suspend fun startPassiveMonitoring() {
+        if (fails) error("Health Services unavailable")
+        events.add("start monitoring")
+    }
+}
+
+class FakeArming(private val events: Events) : ReminderArming {
+    override suspend fun ensureScheduled(): ZonedDateTime? {
+        events.add("arm next check")
+        return null
+    }
+
+    override fun cancel() = events.add("cancel alarms")
+    override fun cancelFollowUp() = events.add("cancel follow-up")
 }
 
 class FakeSteps(private val events: Events, var inSlot: Int = 0, var total: Int = 0) : StepCounts {

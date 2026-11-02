@@ -17,30 +17,32 @@ import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
-import com.hourlysteps.AppContainer
+import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.domain.DayAssignment
 import com.hourlysteps.domain.PlanId
 import com.hourlysteps.domain.ScheduleMode
 import com.hourlysteps.domain.Settings
-import com.hourlysteps.ui.formatPauseEnd
+import com.hourlysteps.reminder.ReminderControls
 import com.hourlysteps.ui.formatFirstCheck
 import com.hourlysteps.ui.formatLastCheck
+import com.hourlysteps.ui.formatPauseEnd
 import com.hourlysteps.ui.formatPlanCaption
 import com.hourlysteps.ui.formatSteps
 import com.hourlysteps.ui.formatWeek
 import com.hourlysteps.ui.fullDayName
 import com.hourlysteps.ui.orderedWeek
+import java.time.Clock
 import java.time.ZonedDateTime
 import kotlinx.coroutines.launch
 
 /** One plan's goal and reminder window, with the resulting steps per reminder. */
 @Composable
 fun PlanEditorScreen(
-    container: AppContainer,
+    settingsRepository: SettingsRepository,
     planId: PlanId,
     onPick: (PickerTarget) -> Unit,
 ) {
-    val settings by container.settingsRepository.settings.collectAsStateWithLifecycle(null)
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle(null)
     val loaded = settings ?: return
     val plan = loaded.schedule.plan(planId)
     val twoPlans = loaded.schedule.mode == ScheduleMode.TWO_PLANS
@@ -101,8 +103,8 @@ fun PlanEditorScreen(
  * rows rather than a row of seven chips, which would be too small to tap on a round watch.
  */
 @Composable
-fun WeekEditorScreen(container: AppContainer) {
-    val settings by container.settingsRepository.settings.collectAsStateWithLifecycle(null)
+fun WeekEditorScreen(settingsRepository: SettingsRepository, controls: ReminderControls) {
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle(null)
     val loaded = settings ?: return
     val schedule = loaded.schedule
     val scope = rememberCoroutineScope()
@@ -140,8 +142,8 @@ fun WeekEditorScreen(container: AppContainer) {
                     Button(
                         onClick = {
                             scope.launch {
-                                container.settingsRepository.update { it.copy(schedule = it.schedule.cycled(day)) }
-                                container.ensureArmed()
+                                settingsRepository.update { it.copy(schedule = it.schedule.cycled(day)) }
+                                controls.ensureArmed()
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -165,17 +167,17 @@ fun WeekEditorScreen(container: AppContainer) {
 
 /** Pause reminders for a while, or resume them. Steps keep counting either way. */
 @Composable
-fun PauseScreen(container: AppContainer, onDone: () -> Unit) {
-    val settings by container.settingsRepository.settings.collectAsStateWithLifecycle(null)
+fun PauseScreen(settingsRepository: SettingsRepository, controls: ReminderControls, clock: Clock, onDone: () -> Unit) {
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle(null)
     val loaded = settings ?: return
     val scope = rememberCoroutineScope()
     val listState = rememberScalingLazyListState()
-    val today = ZonedDateTime.now(container.clock).toLocalDate()
+    val today = ZonedDateTime.now(clock).toLocalDate()
     val paused = loaded.pausedThrough?.takeIf { loaded.isPaused(today) }
 
     fun pause(through: java.time.LocalDate?) {
         scope.launch {
-            container.setPausedThrough(through)
+            controls.setPausedThrough(through)
             onDone()
         }
     }

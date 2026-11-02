@@ -220,7 +220,7 @@ real watch, add the tile from the tile list and pick complications in the watch 
 |---|---|
 | `domain` | Pure logic: themes, schedule and slots, goal maths, pace, check decision, next-alarm time, day status, today summary, wording for each interval. Fully unit-tested. |
 | `data` | Settings (DataStore), raw step points and check log (Room), Health Services passive listener. |
-| `reminder` | Exact-alarm chain, the slot check, notifications and vibration, the Pace check screen, reschedule on boot/time change. |
-| `celebration` | Goal celebration trigger, fireworks screen. |
+| `reminder` | Exact-alarm chain, the slot check, starting and pausing reminders, notifications and vibration, the Pace check screen, reschedule on boot/time change. |
+| `celebration` | Noticing a goal (`GoalWatcher`), how it reaches you (`CelebrationPresenter`), fireworks screen. |
 | `surfaces` | Tile, complications, and the ring and complication text they share with Home. |
 | `ui` | Compose for Wear OS Material 3: Home rings, Today page, Settings, plan and week editors, pause, theme picker, pickers, permissions. |

@@ -12,6 +12,12 @@ interface ReminderAlarms {
     fun scheduleFollowUp(at: ZonedDateTime, kind: FollowUpKind)
 }
 
+interface ReminderArming {
+    suspend fun ensureScheduled(): ZonedDateTime?
+    fun cancel()
+    fun cancelFollowUp()
+}
+
 interface ReminderPresenter {
     suspend fun show(result: CheckResult, settings: Settings, plan: DayPlan?, slot: Slot?, now: ZonedDateTime, todayTotal: Int)
     fun cancel()

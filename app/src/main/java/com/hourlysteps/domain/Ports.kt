@@ -8,6 +8,14 @@ interface SettingsSource {
     suspend fun current(): Settings
 }
 
+interface SettingsEditor {
+    suspend fun update(transform: (Settings) -> Settings)
+}
+
+interface StepMonitoring {
+    suspend fun startPassiveMonitoring()
+}
+
 interface StepCounts {
     /** Asks the watch to hand over any steps it's still holding. */
     suspend fun flush()

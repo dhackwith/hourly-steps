@@ -13,6 +13,7 @@ import com.hourlysteps.data.db.StepPointDao
 import com.hourlysteps.data.db.StepPointEntity
 import com.hourlysteps.domain.Slot
 import com.hourlysteps.domain.StepCounts
+import com.hourlysteps.domain.StepMonitoring
 import com.hourlysteps.domain.StepPoint
 import java.time.Clock
 import java.time.Instant
@@ -30,7 +31,7 @@ class StepsRepository(
     private val context: Context,
     private val dao: StepPointDao,
     private val clock: Clock,
-) : StepCounts {
+) : StepCounts, StepMonitoring {
     private val client: PassiveMonitoringClient
         get() = HealthServices.getClient(context).passiveMonitoringClient
 
@@ -44,7 +45,7 @@ class StepsRepository(
     }
 
     /** Idempotent: Health Services replaces any earlier registration from this app. */
-    suspend fun startPassiveMonitoring() {
+    override suspend fun startPassiveMonitoring() {
         val config = PassiveListenerConfig.builder()
             .setDataTypes(setOf(DataType.STEPS))
             .setShouldUserActivityInfoBeRequested(true)

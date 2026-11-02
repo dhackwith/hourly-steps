@@ -19,7 +19,7 @@ class DebugThemeReceiver : BroadcastReceiver() {
         val pending = goAsync()
         container.appScope.launch {
             try {
-                container.setTheme(theme)
+                container.reminderControls.setTheme(theme)
             } finally {
                 pending.finish()
             }

@@ -19,14 +19,15 @@ import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.RadioButton
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
-import com.hourlysteps.AppContainer
+import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.domain.AppTheme
+import com.hourlysteps.reminder.ReminderControls
 import kotlinx.coroutines.launch
 
 /** Tap a theme and the whole app changes straight away, so it's easy to try them all. */
 @Composable
-fun ThemeScreen(container: AppContainer) {
-    val settings by container.settingsRepository.settings.collectAsStateWithLifecycle(null)
+fun ThemeScreen(settingsRepository: SettingsRepository, controls: ReminderControls) {
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle(null)
     val loaded = settings ?: return
     val scope = rememberCoroutineScope()
     val listState = rememberScalingLazyListState()
@@ -38,7 +39,7 @@ fun ThemeScreen(container: AppContainer) {
                 item(key = theme.name) {
                     RadioButton(
                         selected = loaded.theme == theme,
-                        onSelect = { scope.launch { container.setTheme(theme) } },
+                        onSelect = { scope.launch { controls.setTheme(theme) } },
                         modifier = Modifier.fillMaxWidth(),
                         icon = { ThemeSwatch(theme) },
                         label = { Text(theme.label) },

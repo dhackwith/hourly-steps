@@ -40,11 +40,11 @@ fun PermissionsScreen(container: AppContainer, onDone: () -> Unit) {
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         refresh++
-        scope.launch { container.ensureArmed() }
+        scope.launch { container.reminderControls.ensureArmed() }
     }
 
-    val activityOk = remember(refresh) { container.hasActivityRecognition() }
-    val notifOk = remember(refresh) { container.hasNotificationPermission() }
+    val activityOk = remember(refresh) { container.permissions.hasActivityRecognition() }
+    val notifOk = remember(refresh) { container.permissions.hasNotificationPermission() }
     val exactOk = remember(refresh) { container.reminderScheduler.canScheduleExact() }
     val fullScreenOk = remember(refresh) { container.celebrationSurface.canUseFullScreenIntent() }
 
@@ -120,7 +120,7 @@ fun PermissionsScreen(container: AppContainer, onDone: () -> Unit) {
                 Button(
                     onClick = {
                         scope.launch {
-                            container.ensureArmed()
+                            container.reminderControls.ensureArmed()
                             onDone()
                         }
                     },

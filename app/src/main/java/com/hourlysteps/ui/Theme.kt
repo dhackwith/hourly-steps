@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material3.ColorScheme
 import androidx.wear.compose.material3.MaterialTheme
-import com.hourlysteps.AppContainer
+import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.domain.AppTheme
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -22,8 +22,8 @@ val LocalAppTheme = compositionLocalOf { AppTheme.DEFAULT }
  * setting has loaded, so the default theme never flashes first.
  */
 @Composable
-fun HourlyStepsTheme(container: AppContainer, content: @Composable () -> Unit) {
-    val themes = remember(container) { container.settingsRepository.settings.map { it.theme }.distinctUntilChanged() }
+fun HourlyStepsTheme(settingsRepository: SettingsRepository, content: @Composable () -> Unit) {
+    val themes = remember(settingsRepository) { settingsRepository.settings.map { it.theme }.distinctUntilChanged() }
     val theme by themes.collectAsStateWithLifecycle<AppTheme?>(null)
     val loaded = theme ?: return
 

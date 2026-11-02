@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.hourlysteps.domain.Settings
+import com.hourlysteps.domain.SettingsEditor
 import com.hourlysteps.domain.SettingsSource
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
@@ -16,7 +17,7 @@ import kotlinx.coroutines.flow.map
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-class SettingsRepository(private val context: Context) : SettingsSource {
+class SettingsRepository(private val context: Context) : SettingsSource, SettingsEditor {
 
     val settings: Flow<Settings> = context.settingsDataStore.data
         .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
@@ -24,7 +25,7 @@ class SettingsRepository(private val context: Context) : SettingsSource {
 
     override suspend fun current(): Settings = settings.first()
 
-    suspend fun update(transform: (Settings) -> Settings) {
+    override suspend fun update(transform: (Settings) -> Settings) {
         context.settingsDataStore.edit { prefs ->
             SettingsCodec.write(prefs, transform(SettingsCodec.read(prefs)))
         }

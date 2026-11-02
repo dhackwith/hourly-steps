@@ -19,10 +19,11 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Picker
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.rememberPickerState
-import com.hourlysteps.AppContainer
+import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.domain.DayPlan
 import com.hourlysteps.domain.PlanId
 import com.hourlysteps.domain.Settings
+import com.hourlysteps.reminder.ReminderControls
 import com.hourlysteps.ui.formatFirstCheck
 import com.hourlysteps.ui.formatLastCheck
 import com.hourlysteps.ui.formatPickerCaption
@@ -98,8 +99,8 @@ private fun slotsCaption(s: Settings, planId: PlanId): String {
 }
 
 @Composable
-fun ValuePickerScreen(container: AppContainer, target: PickerTarget, planId: PlanId, onDone: () -> Unit) {
-    val settings by container.settingsRepository.settings.collectAsStateWithLifecycle(null)
+fun ValuePickerScreen(settingsRepository: SettingsRepository, controls: ReminderControls, target: PickerTarget, planId: PlanId, onDone: () -> Unit) {
+    val settings by settingsRepository.settings.collectAsStateWithLifecycle(null)
     val loaded = settings ?: return
     val spec = remember(target, planId) { specFor(target, planId) }
     val initialIndex = remember(loaded, spec) {
@@ -134,8 +135,8 @@ fun ValuePickerScreen(container: AppContainer, target: PickerTarget, planId: Pla
         EdgeButton(
             onClick = {
                 scope.launch {
-                    container.settingsRepository.update { spec.apply(it, selected) }
-                    container.ensureArmed()
+                    settingsRepository.update { spec.apply(it, selected) }
+                    controls.ensureArmed()
                     onDone()
                 }
             },

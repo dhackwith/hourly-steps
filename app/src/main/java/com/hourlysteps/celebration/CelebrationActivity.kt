@@ -72,7 +72,7 @@ class CelebrationActivity : ComponentActivity() {
                 delay(VIBRATE_AFTER_MS)
                 Haptics.vibrate(this@CelebrationActivity, vibration, fullStrength = true)
             }
-            HourlyStepsTheme(container) {
+            HourlyStepsTheme(container.settingsRepository) {
                 CelebrationScreen(celebration, reduceMotion, onDone = ::finish)
             }
         }

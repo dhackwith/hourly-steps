@@ -22,7 +22,7 @@ class ReminderScheduler(
     private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val clock: Clock,
-) : ReminderAlarms, StepCheckAlarm {
+) : ReminderAlarms, ReminderArming, StepCheckAlarm {
     private val alarmManager: AlarmManager
         get() = context.getSystemService(AlarmManager::class.java)
 
@@ -45,9 +45,9 @@ class ReminderScheduler(
         return next
     }
 
-    suspend fun ensureScheduled(): ZonedDateTime? = ensureScheduled(ZonedDateTime.now(clock))
+    override suspend fun ensureScheduled(): ZonedDateTime? = ensureScheduled(ZonedDateTime.now(clock))
 
-    fun cancel() {
+    override fun cancel() {
         alarmManager.cancel(pendingIntent(0L))
         alarmManager.cancel(slotChangeIntent())
     }
@@ -108,7 +108,7 @@ class ReminderScheduler(
         }
     }
 
-    fun cancelFollowUp() {
+    override fun cancelFollowUp() {
         alarmManager.cancel(followUpIntent(0L, FollowUpKind.SNOOZE))
     }
 

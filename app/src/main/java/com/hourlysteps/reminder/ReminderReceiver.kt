@@ -52,7 +52,7 @@ class ReminderReceiver : BroadcastReceiver() {
                 if (scheduledAt != null && kind != null) container.reminderCheck.runFollowUp(scheduledAt, kind)
             }
             ACTION_SNOOZE -> container.reminderCheck.snooze()
-            ACTION_PAUSE_TODAY -> container.pauseToday()
+            ACTION_PAUSE_TODAY -> container.reminderControls.pauseToday()
             // New steps come back through the passive listener, which decides whether to look again.
             ACTION_CHECK_STEPS -> container.stepsRepository.flush()
             ACTION_SLOT_CHANGE -> {

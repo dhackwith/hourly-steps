@@ -26,7 +26,7 @@ class RescheduleReceiver : BroadcastReceiver() {
         val pending = goAsync()
         container.appScope.launch {
             try {
-                container.ensureArmed()
+                container.reminderControls.ensureArmed()
                 Log.i(TAG, "Re-armed after ${intent.action}")
             } catch (t: Throwable) {
                 Log.e(TAG, "Re-arm failed", t)

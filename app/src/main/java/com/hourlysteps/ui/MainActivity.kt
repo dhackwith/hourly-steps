@@ -35,9 +35,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val startOnPermissions = !container.hasActivityRecognition()
+        val startOnPermissions = !container.permissions.hasActivityRecognition()
         setContent {
-            HourlyStepsTheme(container) {
+            HourlyStepsTheme(container.settingsRepository) {
                 AppScaffold {
                     HourlyStepsNavHost(container, startOnPermissions)
                 }
@@ -47,11 +47,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        container.onScreenStarted()
+        container.visibleScreens.onScreenStarted()
     }
 
     override fun onStop() {
-        container.onScreenStopped()
+        container.visibleScreens.onScreenStopped()
         super.onStop()
     }
 
@@ -59,8 +59,8 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         // Recover from force-stop, pick up permission changes, and pull fresh steps for the UI.
         lifecycleScope.launch {
-            container.ensureArmed()
-            if (container.hasActivityRecognition()) container.stepsRepository.flush()
+            container.reminderControls.ensureArmed()
+            if (container.permissions.hasActivityRecognition()) container.stepsRepository.flush()
         }
     }
 }
@@ -115,19 +115,19 @@ private fun HourlyStepsNavHost(container: AppContainer, startOnPermissions: Bool
         composable(Routes.PLAN) { entry ->
             val planId = entry.planArg()
             PlanEditorScreen(
-                container = container,
+                settingsRepository = container.settingsRepository,
                 planId = planId,
                 onPick = { navController.navigate(Routes.picker(it, planId)) },
             )
         }
-        composable(Routes.WEEK) { WeekEditorScreen(container) }
-        composable(Routes.PAUSE) { PauseScreen(container, onDone = { navController.popBackStack() }) }
-        composable(Routes.THEME) { ThemeScreen(container) }
+        composable(Routes.WEEK) { WeekEditorScreen(container.settingsRepository, container.reminderControls) }
+        composable(Routes.PAUSE) { PauseScreen(container.settingsRepository, container.reminderControls, container.clock, onDone = { navController.popBackStack() }) }
+        composable(Routes.THEME) { ThemeScreen(container.settingsRepository, container.reminderControls) }
         composable(Routes.PICKER) { entry ->
             val target = entry.arguments?.getString("target")
                 ?.let { runCatching { PickerTarget.valueOf(it) }.getOrNull() }
                 ?: PickerTarget.DAILY_GOAL
-            ValuePickerScreen(container, target, entry.planArg(), onDone = { navController.popBackStack() })
+            ValuePickerScreen(container.settingsRepository, container.reminderControls, target, entry.planArg(), onDone = { navController.popBackStack() })
         }
         composable(Routes.PERMISSIONS) {
             PermissionsScreen(

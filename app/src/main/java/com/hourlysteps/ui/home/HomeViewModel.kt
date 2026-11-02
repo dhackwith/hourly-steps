@@ -55,7 +55,7 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
             now,
             settings,
             container.stepsRepository.observeDayPoints(date),
-            container.observeDayChecks(date),
+            container.checkHistory.observeDay(date),
         ) { time, s, points, checks -> TodaySummary.compute(time, s, points, checks) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -64,6 +64,6 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun resume() {
-        container.appScope.launch { container.setPausedThrough(null) }
+        container.appScope.launch { container.reminderControls.setPausedThrough(null) }
     }
 }

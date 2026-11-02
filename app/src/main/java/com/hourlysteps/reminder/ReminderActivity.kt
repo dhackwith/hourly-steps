@@ -63,7 +63,7 @@ class ReminderActivity : ComponentActivity() {
         getSystemService(NotificationManager::class.java).cancel(ReminderNotifier.NOTIFICATION_ID)
 
         setContent {
-            HourlyStepsTheme(container) {
+            HourlyStepsTheme(container.settingsRepository) {
                 val statuses = remember {
                     flow {
                         while (true) {
@@ -89,11 +89,11 @@ class ReminderActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        container.onScreenStarted()
+        container.visibleScreens.onScreenStarted()
     }
 
     override fun onStop() {
-        container.onScreenStopped()
+        container.visibleScreens.onScreenStopped()
         super.onStop()
     }
 
