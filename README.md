@@ -51,11 +51,31 @@ Requires JDK 17+ (Android Studio's bundled JBR works) and Android SDK platform 3
 
 ## Install on the watch
 
-Enable ADB debugging and wireless debugging on the watch, pair it, then:
+Enable ADB debugging and wireless debugging on the watch, then pair and connect it with `adb pair`
+and `adb connect`, using the addresses shown on the watch. Use the release build for everyday wear:
+debug builds aren't compiled ahead of time and swipe noticeably slower on a real watch.
 
 ```bash
-./gradlew installDebug
+./gradlew assembleRelease
 ```
+
+Name the watch with `-s`, because `./gradlew installRelease` installs on every connected device,
+including any running emulators. The address is the one you connected to:
+
+```bash
+adb -s <watch-address> install -r app/build/outputs/apk/release/app-release.apk
+```
+
+Then compile it straight away for the smoothest swiping. Otherwise the watch does this by itself
+later, while idle and charging:
+
+```bash
+adb -s <watch-address> shell cmd package compile -m speed-profile -f com.hourlysteps
+```
+
+The release build is signed with this computer's debug key so it installs over a debug build and
+keeps its data. A Play release needs its own key. It has no debug buttons or adb debug commands, and
+`run-as` can't read its data.
 
 ## Try it on an emulator
 

@@ -19,6 +19,9 @@ android {
 
     buildTypes {
         release {
+            // Sideloading only: the debug key lets this install over a debug build and keep its data.
+            // A Play release needs its own key.
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
