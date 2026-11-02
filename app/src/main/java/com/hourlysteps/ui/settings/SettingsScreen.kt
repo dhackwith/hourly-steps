@@ -243,7 +243,7 @@ fun SettingsScreen(
                             val plan = schedule.planA
                             val goal = GoalCalculator.slotGoal(plan, schedule.slotMinutes)
                             scope.launch {
-                                container.celebrationManager.celebrate(
+                                container.celebrationPresenter.celebrate(
                                     Celebration(
                                         kind = CelebrationKind.SLOT_GOAL,
                                         stepsInSlot = goal + 37,

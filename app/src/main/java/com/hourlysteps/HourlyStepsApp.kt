@@ -12,7 +12,7 @@ class HourlyStepsApp : Application() {
         super.onCreate()
         container = AppContainer(this)
         container.appScope.launch {
-            container.reminderNotifier.syncChannels(container.settingsRepository.current().vibration)
+            container.notificationChannels.sync(container.settingsRepository.current().vibration)
         }
     }
 }

@@ -91,6 +91,7 @@ class FakeAlarms(private val events: Events) : ReminderAlarms {
 
 class FakeReminder(private val events: Events) : ReminderPresenter {
     val shown = mutableListOf<CheckResult>()
+    var showing = false
 
     override suspend fun show(result: CheckResult, settings: Settings, plan: DayPlan?, slot: Slot?, now: ZonedDateTime, todayTotal: Int) {
         if (result != CheckResult.None) events.add("show reminder")
@@ -98,6 +99,7 @@ class FakeReminder(private val events: Events) : ReminderPresenter {
     }
 
     override fun cancel() = events.add("cancel reminder")
+    override fun isShowing() = showing
 }
 
 class FakeCheckLog(private val events: Events) : CheckLogDao() {

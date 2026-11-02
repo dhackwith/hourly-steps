@@ -8,7 +8,8 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.room.Room
 import com.hourlysteps.celebration.AndroidCelebrationSurface
-import com.hourlysteps.celebration.CelebrationManager
+import com.hourlysteps.celebration.CelebrationPresenter
+import com.hourlysteps.celebration.GoalWatcher
 import com.hourlysteps.celebration.PrefsCelebrationMemory
 import com.hourlysteps.data.db.AppDatabase
 import com.hourlysteps.data.db.MIGRATION_1_2
@@ -23,7 +24,9 @@ import com.hourlysteps.domain.AppTheme
 import com.hourlysteps.domain.CheckRecord
 import com.hourlysteps.domain.SystemZoneClock
 import com.hourlysteps.reminder.Charger
+import com.hourlysteps.reminder.NotificationChannels
 import com.hourlysteps.reminder.ReminderCheck
+import com.hourlysteps.reminder.ReminderDismissal
 import com.hourlysteps.reminder.ReminderNotifier
 import com.hourlysteps.reminder.ReminderScheduler
 import com.hourlysteps.surfaces.SurfaceUpdater
@@ -57,7 +60,9 @@ class AppContainer(private val context: Context) {
     val surfaceUpdater = SurfaceUpdater(context)
     val activityStore = ActivityStore(context)
     val streakRepository = StreakRepository(database.daySummaryDao(), stepsRepository, settingsRepository, clock)
-    val reminderNotifier = ReminderNotifier(context, settingsRepository, stepsRepository, clock, isUiVisible = { uiVisible })
+    val notificationChannels = NotificationChannels(context)
+    val reminderNotifier = ReminderNotifier(context, notificationChannels, isUiVisible = { uiVisible })
+    val reminderDismissal = ReminderDismissal(reminderNotifier, settingsRepository, stepsRepository, clock)
     val reminderScheduler = ReminderScheduler(context, settingsRepository, clock)
     val reminderCheck = ReminderCheck(
         settingsSource = settingsRepository,
@@ -92,10 +97,11 @@ class AppContainer(private val context: Context) {
         startedScreens.decrementAndGet()
     }
 
-    val celebrationSurface = AndroidCelebrationSurface(context, reminderNotifier, isUiVisible = { uiVisible })
+    val celebrationSurface = AndroidCelebrationSurface(context, reminderNotifier, notificationChannels, isUiVisible = { uiVisible })
+    val celebrationPresenter = CelebrationPresenter(celebrationSurface, settingsRepository)
 
-    val celebrationManager = CelebrationManager(
-        surface = celebrationSurface,
+    val goalWatcher = GoalWatcher(
+        presenter = celebrationPresenter,
         memory = PrefsCelebrationMemory(context),
         stepCheckAlarm = reminderScheduler,
         settingsSource = settingsRepository,

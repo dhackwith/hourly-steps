@@ -15,4 +15,5 @@ interface ReminderAlarms {
 interface ReminderPresenter {
     suspend fun show(result: CheckResult, settings: Settings, plan: DayPlan?, slot: Slot?, now: ZonedDateTime, todayTotal: Int)
     fun cancel()
+    fun isShowing(): Boolean
 }

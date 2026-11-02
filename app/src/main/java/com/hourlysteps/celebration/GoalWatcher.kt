@@ -2,7 +2,6 @@ package com.hourlysteps.celebration
 
 import android.util.Log
 import com.hourlysteps.domain.ActivitySource
-import com.hourlysteps.domain.Celebration
 import com.hourlysteps.domain.CelebrationDecider
 import com.hourlysteps.domain.SettingsSource
 import com.hourlysteps.domain.Slots
@@ -10,20 +9,14 @@ import com.hourlysteps.domain.StepCheckAlarm
 import com.hourlysteps.domain.StepCounts
 import com.hourlysteps.domain.StreakTracker
 import com.hourlysteps.domain.UserActivity
-import com.hourlysteps.reminder.Haptics
 import java.time.Clock
 import java.time.ZonedDateTime
 
-private const val TAG = "CelebrationManager"
+private const val TAG = "GoalWatcher"
 
-/**
- * Detects the moment a slot's goal or the daily goal is reached and celebrates it once.
- *
- * A screen opened from the background is gone in seconds and may go unseen, so it leaves a silent
- * notification behind.
- */
-class CelebrationManager(
-    private val surface: CelebrationSurface,
+/** Notices the moment a slot's goal or the daily goal is reached, so it's celebrated once. */
+class GoalWatcher(
+    private val presenter: CelebrationPresenter,
     private val memory: CelebrationMemory,
     private val stepCheckAlarm: StepCheckAlarm,
     private val settingsSource: SettingsSource,
@@ -72,10 +65,10 @@ class CelebrationManager(
         if (daily != null) {
             memory.remember(slot = if (hourly != null) slotKey else null, day = date.toString())
             streakTracker.finalizePastDays()
-            celebrate(daily.copy(streak = streakTracker.current().current))
+            presenter.celebrate(daily.copy(streak = streakTracker.current().current))
         } else if (hourly != null) {
             memory.remember(slot = slotKey)
-            celebrate(hourly)
+            presenter.celebrate(hourly)
         }
 
         val left = CelebrationDecider.stepsToNext(
@@ -91,23 +84,5 @@ class CelebrationManager(
             Log.i(TAG, "$left steps from a goal; asking for steps again soon")
             stepCheckAlarm.scheduleStepCheck()
         }
-    }
-
-    suspend fun celebrate(celebration: Celebration) {
-        val inBackground = !surface.isUiVisible()
-        Log.i(TAG, "Celebrating $celebration uiVisible=${!inBackground}")
-        val strength = settingsSource.current().vibration
-        surface.prepare(strength)
-        val pattern = Haptics.celebrationPattern(strength)
-
-        // A notification would not alert while the app is in the foreground on Wear OS anyway.
-        val canOpen = !inBackground || surface.canOpenFromBackground()
-        surface.wakeScreen()
-        if (canOpen && surface.openScreen(celebration, pattern)) {
-            if (inBackground) surface.postRecord(celebration)
-            return
-        }
-        surface.postAlert(celebration, strength)
-        surface.vibrate(pattern)
     }
 }

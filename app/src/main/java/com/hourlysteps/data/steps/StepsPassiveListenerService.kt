@@ -24,8 +24,8 @@ class StepsPassiveListenerService : PassiveListenerService() {
             runCatching {
                 container.stepsRepository.record(steps)
                 container.streakRepository.finalizePastDays()
-                container.reminderNotifier.dismissIfSatisfied()
-                container.celebrationManager.onStepsRecorded(hadNewSteps = steps.any { it.value > 0 })
+                container.reminderDismissal.dismissIfSatisfied()
+                container.goalWatcher.onStepsRecorded(hadNewSteps = steps.any { it.value > 0 })
                 container.surfaceUpdater.onStepsChanged()
             }.onFailure { Log.e(TAG, "Failed to record steps", it) }
         }

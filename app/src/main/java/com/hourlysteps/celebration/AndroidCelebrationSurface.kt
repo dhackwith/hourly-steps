@@ -16,6 +16,7 @@ import com.hourlysteps.domain.Streaks
 import com.hourlysteps.domain.VibrationStrength
 import com.hourlysteps.reminder.Attention
 import com.hourlysteps.reminder.Haptics
+import com.hourlysteps.reminder.NotificationChannels
 import com.hourlysteps.reminder.ReminderNotifier
 import com.hourlysteps.ui.formatSteps
 import kotlinx.coroutines.delay
@@ -33,6 +34,7 @@ import kotlinx.coroutines.delay
 class AndroidCelebrationSurface(
     private val context: Context,
     private val reminderNotifier: ReminderNotifier,
+    private val channels: NotificationChannels,
     private val isUiVisible: () -> Boolean,
 ) : CelebrationSurface {
 
@@ -50,7 +52,7 @@ class AndroidCelebrationSurface(
 
     override fun prepare(strength: VibrationStrength) {
         reminderNotifier.cancel()
-        reminderNotifier.syncChannels(strength)
+        channels.sync(strength)
     }
 
     // Wear OS ignores full-screen intents in always-on mode, so the screen has to be lit first.
@@ -78,7 +80,7 @@ class AndroidCelebrationSurface(
             notificationManager.canUseFullScreenIntent()
 
     override fun postAlert(celebration: Celebration, strength: VibrationStrength) {
-        val builder = builder(celebration, ReminderNotifier.channelId(ReminderNotifier.CHANNEL_CELEBRATION, strength))
+        val builder = builder(celebration, NotificationChannels.id(NotificationChannels.CELEBRATION, strength))
             .setCategory(NotificationCompat.CATEGORY_EVENT)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setTimeoutAfter(NOTIFICATION_TIMEOUT_MS)
@@ -89,7 +91,7 @@ class AndroidCelebrationSurface(
     }
 
     override fun postRecord(celebration: Celebration) {
-        val builder = builder(celebration, ReminderNotifier.CHANNEL_CELEBRATION_RECORD)
+        val builder = builder(celebration, NotificationChannels.CELEBRATION_RECORD)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setSilent(true)

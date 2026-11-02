@@ -37,7 +37,7 @@ class DebugCelebrateReceiver : BroadcastReceiver() {
                 } else {
                     Celebration(CelebrationKind.SLOT_GOAL, goal + 23, goal, plan.dailyGoal / 2, plan.dailyGoal, slotMinutes = settings.schedule.slotMinutes)
                 }
-                container.celebrationManager.celebrate(celebration)
+                container.celebrationPresenter.celebrate(celebration)
             } finally {
                 pending.finish()
             }
