@@ -13,6 +13,8 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <!-- Android 14+: needed for the brief screen wake when a goal is reached. -->
     <uses-permission android:name="android.permission.TURN_SCREEN_ON" />
+    <!-- Once granted with adb, lets the celebration screen open from the background instead of a pop-up. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:name=".HourlyStepsApp"

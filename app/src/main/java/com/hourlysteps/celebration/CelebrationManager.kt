@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
@@ -35,11 +36,12 @@ private const val TAG = "CelebrationManager"
 /**
  * Detects the moment a slot's goal or the daily goal is reached and celebrates it once.
  *
- * Reaching the screen from the background: when the app's UI is visible the celebration
- * activity is started directly. Otherwise a high-priority notification is posted with a
- * full-screen intent, which launches the celebration when the watch screen is off (like an
- * alarm) and shows as a heads-up alert when it is on. If the full-screen intent permission is
- * not granted, the notification still alerts and tapping it opens the celebration.
+ * Reaching the screen from the background: the celebration activity is started directly when
+ * the app's UI is visible, or when the app holds the "display over other apps" permission, which
+ * Android requires of a background app opening a screen. Otherwise a high-priority notification
+ * is posted with a full-screen intent, which launches the celebration when the watch screen is
+ * off (like an alarm) and shows as a heads-up alert when it is on. If the full-screen intent
+ * permission is not granted, the notification still alerts and tapping it opens the celebration.
  */
 class CelebrationManager(
     private val context: Context,
@@ -52,6 +54,9 @@ class CelebrationManager(
     private val isUiVisible: () -> Boolean,
 ) {
     private val prefs = context.getSharedPreferences("celebrations", Context.MODE_PRIVATE)
+
+    @Volatile
+    private var screenOpened = false
 
     private val notificationManager: NotificationManager
         get() = context.getSystemService(NotificationManager::class.java)
@@ -102,9 +107,6 @@ class CelebrationManager(
         }
     }
 
-    // NEW_TASK is required to start an activity from the application context; the activity is
-    // noHistory and excluded from recents, which is what the WearRecents check is guarding.
-    @SuppressLint("WearRecents")
     suspend fun celebrate(celebration: Celebration) {
         Log.i(TAG, "Celebrating $celebration uiVisible=${isUiVisible()}")
         reminderNotifier.cancel()
@@ -112,17 +114,33 @@ class CelebrationManager(
         reminderNotifier.syncChannels(strength)
         val pattern = Haptics.celebrationPattern(strength)
 
-        if (isUiVisible()) {
-            // The app is on screen, so it may start an activity itself. A notification would not
-            // alert while the app is in the foreground on Wear OS anyway.
-            context.startActivity(CelebrationActivity.intent(context, celebration).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            Haptics.vibrate(context, pattern)
-            return
-        }
+        // A notification would not alert while the app is in the foreground on Wear OS anyway.
+        val canOpen = isUiVisible() || canOpenFromBackground()
         // Wear OS ignores full-screen intents in always-on mode, so light the screen first.
         if (Attention.wakeScreenIfAsleep(context)) delay(Attention.WAKE_SETTLE_MS)
+        if (canOpen && openScreen(celebration, pattern)) return
         postNotification(celebration, strength)
         Haptics.vibrate(context, pattern)
+    }
+
+    /** Do Not Disturb is left to filter the notification; an opened screen would ignore it. */
+    private fun canOpenFromBackground(): Boolean =
+        Settings.canDrawOverlays(context) && Attention.interruptionsAllowed(context)
+
+    /** @return false if the screen didn't open. Android blocks a background start without saying so. */
+    // NEW_TASK is required to start an activity from the application context; the activity is
+    // noHistory and excluded from recents, which is what the WearRecents check is guarding.
+    @SuppressLint("WearRecents")
+    private suspend fun openScreen(celebration: Celebration, pattern: LongArray?): Boolean {
+        screenOpened = false
+        context.startActivity(CelebrationActivity.intent(context, celebration, pattern).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        delay(OPEN_WAIT_MS)
+        return screenOpened
+    }
+
+    /** Called by the celebration screen as it opens. */
+    fun onScreenOpened() {
+        screenOpened = true
     }
 
     fun canUseFullScreenIntent(): Boolean =
@@ -174,5 +192,6 @@ class CelebrationManager(
         private const val KEY_LAST_SLOT = "last_celebrated_slot"
         private const val KEY_LAST_DAY = "last_celebrated_day"
         private const val NOTIFICATION_TIMEOUT_MS = 10 * 60 * 1000L
+        private const val OPEN_WAIT_MS = 1_500L
     }
 }

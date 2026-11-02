@@ -36,6 +36,7 @@ import com.hourlysteps.domain.CelebrationKind
 import com.hourlysteps.domain.Settings
 import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.domain.Streaks
+import com.hourlysteps.reminder.Haptics
 import com.hourlysteps.ui.HourlyStepsTheme
 import com.hourlysteps.ui.LocalAppTheme
 import com.hourlysteps.ui.formatSteps
@@ -53,6 +54,10 @@ class CelebrationActivity : ComponentActivity() {
         setShowWhenLocked(true)
         setTurnScreenOn(true)
         getSystemService(NotificationManager::class.java).cancel(CelebrationManager.NOTIFICATION_ID)
+        val container = (application as HourlyStepsApp).container
+        container.celebrationManager.onScreenOpened()
+        // Android drops a vibration asked for from the background, so the open screen plays it.
+        if (savedInstanceState == null) Haptics.vibrate(this, intent.getLongArrayExtra(EXTRA_VIBRATION))
 
         val celebration = celebrationFrom(intent)
         val reduceMotion = AndroidSettings.Global.getFloat(
@@ -62,7 +67,7 @@ class CelebrationActivity : ComponentActivity() {
         ) == 0f
 
         setContent {
-            HourlyStepsTheme((application as HourlyStepsApp).container) {
+            HourlyStepsTheme(container) {
                 CelebrationScreen(celebration, reduceMotion, onDone = ::finish)
             }
         }
@@ -76,9 +81,11 @@ class CelebrationActivity : ComponentActivity() {
         private const val EXTRA_DAILY_GOAL = "daily_goal"
         private const val EXTRA_STREAK = "streak"
         private const val EXTRA_SLOT_MINUTES = "slot_minutes"
+        private const val EXTRA_VIBRATION = "vibration"
 
-        fun intent(context: Context, c: Celebration): Intent =
+        fun intent(context: Context, c: Celebration, vibration: LongArray? = null): Intent =
             Intent(context, CelebrationActivity::class.java)
+                .putExtra(EXTRA_VIBRATION, vibration)
                 .putExtra(EXTRA_KIND, c.kind.name)
                 .putExtra(EXTRA_STEPS, c.stepsInSlot)
                 .putExtra(EXTRA_TARGET, c.target)
