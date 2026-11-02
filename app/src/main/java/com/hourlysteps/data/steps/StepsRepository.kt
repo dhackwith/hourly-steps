@@ -9,21 +9,23 @@ import androidx.health.services.client.PassiveMonitoringClient
 import androidx.health.services.client.data.DataType
 import androidx.health.services.client.data.IntervalDataPoint
 import androidx.health.services.client.data.PassiveListenerConfig
-import com.hourlysteps.data.db.HourlyStepsDao
-import com.hourlysteps.domain.HourBucketing
+import com.hourlysteps.data.db.StepPointDao
+import com.hourlysteps.data.db.StepPointEntity
+import com.hourlysteps.domain.Slot
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZonedDateTime
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withTimeoutOrNull
 
 private const val TAG = "StepsRepository"
 
-/** Owns Health Services passive monitoring and the per-hour step store. */
+/** Owns Health Services passive monitoring and the store of raw step points. */
 class StepsRepository(
     private val context: Context,
-    private val dao: HourlyStepsDao,
+    private val dao: StepPointDao,
     private val clock: Clock,
 ) {
     private val client: PassiveMonitoringClient
@@ -61,33 +63,40 @@ class StepsRepository(
     }
 
     suspend fun record(points: List<IntervalDataPoint<Long>>) {
-        if (points.isEmpty()) return
         val bootInstant = Instant.ofEpochMilli(System.currentTimeMillis() - SystemClock.elapsedRealtime())
-        for (point in points) {
-            val key = HourBucketing.keyForIntervalEnd(point.getEndInstant(bootInstant), clock.zone)
-            dao.addSteps(key.dateKey, key.hour, point.value.toInt())
+        val entities = points.filter { it.value > 0 }.map { point ->
+            StepPointEntity(
+                startMillis = point.getStartInstant(bootInstant).toEpochMilli(),
+                endMillis = point.getEndInstant(bootInstant).toEpochMilli(),
+                steps = point.value.toInt(),
+            )
         }
+        if (entities.isNotEmpty()) dao.insertAll(entities)
     }
 
-    suspend fun stepsThisHour(at: ZonedDateTime): Int {
-        val key = HourBucketing.keyFor(at)
-        return dao.stepsFor(key.dateKey, key.hour) ?: 0
-    }
+    suspend fun stepsInSlot(slot: Slot): Int =
+        dao.sumBetween(millis(slot.startAt(clock.zone)), millis(slot.endAt(clock.zone)))
 
-    suspend fun todayTotal(at: ZonedDateTime): Int = dao.totalFor(HourBucketing.keyFor(at).dateKey)
+    suspend fun dayTotal(date: LocalDate): Int =
+        dao.sumBetween(dayStart(date), dayStart(date.plusDays(1)))
 
-    fun observeStepsThisHour(at: ZonedDateTime): Flow<Int> {
-        val key = HourBucketing.keyFor(at)
-        return dao.observeStepsFor(key.dateKey, key.hour).map { it ?: 0 }
-    }
+    fun observeStepsInSlot(slot: Slot?): Flow<Int> =
+        if (slot == null) {
+            flowOf(0)
+        } else {
+            dao.observeSumBetween(millis(slot.startAt(clock.zone)), millis(slot.endAt(clock.zone)))
+        }
 
-    fun observeTodayTotal(at: ZonedDateTime): Flow<Int> =
-        dao.observeTotalFor(HourBucketing.keyFor(at).dateKey)
+    fun observeDayTotal(date: LocalDate): Flow<Int> =
+        dao.observeSumBetween(dayStart(date), dayStart(date.plusDays(1)))
 
     suspend fun pruneOlderThan(days: Long) {
-        val cutoff = ZonedDateTime.now(clock).toLocalDate().minusDays(days).toString()
-        dao.pruneBefore(cutoff)
+        dao.pruneBefore(dayStart(ZonedDateTime.now(clock).toLocalDate().minusDays(days)))
     }
+
+    private fun dayStart(date: LocalDate): Long = millis(date.atStartOfDay(clock.zone))
+
+    private fun millis(time: ZonedDateTime): Long = time.toInstant().toEpochMilli()
 
     private companion object {
         const val FLUSH_TIMEOUT_MS = 5_000L

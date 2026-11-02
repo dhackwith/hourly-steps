@@ -13,7 +13,7 @@ import java.time.ZonedDateTime
 
 private const val TAG = "ReminderScheduler"
 
-/** Arms the single one-shot alarm for the next :50 check. */
+/** Arms the single one-shot alarm for the next slot check. */
 class ReminderScheduler(
     private val context: Context,
     private val settingsRepository: SettingsRepository,
@@ -25,11 +25,18 @@ class ReminderScheduler(
     fun canScheduleExact(): Boolean =
         Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
 
-    /** Computes and arms the next check strictly after [after]. Safe to call repeatedly. */
-    suspend fun ensureScheduled(after: ZonedDateTime = ZonedDateTime.now(clock)): ZonedDateTime {
-        val settings = settingsRepository.current()
-        val next = ReminderSchedule.nextCheckTime(after, settings)
-        schedule(next)
+    /**
+     * Computes and arms the next check strictly after [after], or cancels the alarm when no check
+     * is coming (every day off, or paused until resumed). Safe to call repeatedly.
+     */
+    suspend fun ensureScheduled(after: ZonedDateTime = ZonedDateTime.now(clock)): ZonedDateTime? {
+        val next = ReminderSchedule.nextCheckTime(after, settingsRepository.current())
+        if (next == null) {
+            cancel()
+            Log.d(TAG, "No upcoming check; alarm cancelled")
+        } else {
+            schedule(next)
+        }
         return next
     }
 
@@ -44,9 +51,10 @@ class ReminderScheduler(
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)
             Log.d(TAG, "Exact check scheduled for $at")
         } else {
-            // Android clamps windows under 10 minutes, so this fires somewhere in [:45, :55].
-            alarmManager.setWindow(AlarmManager.RTC_WAKEUP, millis - FALLBACK_LEAD_MS, FALLBACK_WINDOW_MS, pi)
-            Log.d(TAG, "Inexact check scheduled around $at")
+            // Android won't honour a window under 10 minutes. Ending it at the check time means
+            // the alarm always fires before the slot ends, even with short slots.
+            alarmManager.setWindow(AlarmManager.RTC_WAKEUP, millis - FALLBACK_WINDOW_MS, FALLBACK_WINDOW_MS, pi)
+            Log.d(TAG, "Inexact check scheduled for the 10 minutes before $at")
         }
     }
 
@@ -64,7 +72,6 @@ class ReminderScheduler(
 
     private companion object {
         const val REQUEST_CODE = 1
-        const val FALLBACK_LEAD_MS = 5 * 60 * 1000L
         const val FALLBACK_WINDOW_MS = 10 * 60 * 1000L
     }
 }

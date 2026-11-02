@@ -10,15 +10,16 @@ import com.hourlysteps.data.db.CheckLogEntity
 import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.data.steps.StepsRepository
 import com.hourlysteps.domain.CheckDecider
+import com.hourlysteps.domain.CheckMode
 import com.hourlysteps.domain.CheckResult
-import com.hourlysteps.domain.HourBucketing
 import com.hourlysteps.domain.ReminderSchedule
+import com.hourlysteps.domain.Slots
 import java.time.Clock
 import java.time.ZonedDateTime
 
 private const val TAG = "ReminderCheck"
 
-/** The :50 check itself: flush, read, decide, notify, log, re-arm. */
+/** The slot check itself: flush, read, decide, notify, log, re-arm. */
 class ReminderCheck(
     private val context: Context,
     private val settingsRepository: SettingsRepository,
@@ -30,50 +31,55 @@ class ReminderCheck(
 ) {
 
     /**
-     * @param scheduledAt the slot this alarm was armed for, or null when fired manually.
+     * @param scheduledAt the check time this alarm was armed for, or null when fired manually.
      * @param force ignore the charging skip (debug / manual trigger).
      */
     suspend fun run(scheduledAt: ZonedDateTime?, force: Boolean = false): CheckResult {
         val now = ZonedDateTime.now(clock)
-        val slot = scheduledAt ?: now
+        val reference = scheduledAt ?: now
+        val date = reference.toLocalDate()
         val settings = settingsRepository.current()
 
         stepsRepository.flush()
-        val stepsThisHour = stepsRepository.stepsThisHour(slot)
-        val todayTotal = stepsRepository.todayTotal(slot)
+        val plan = settings.schedule.planFor(date.dayOfWeek)
+        val slot = Slots.at(settings.schedule, reference)
+        val stepsInSlot = slot?.let { stepsRepository.stepsInSlot(it) } ?: 0
+        val todayTotal = stepsRepository.dayTotal(date)
 
         val skippedReason = when {
-            scheduledAt != null && ReminderSchedule.isLate(scheduledAt, now) -> "late"
+            settings.isPaused(date) -> "paused"
+            plan == null -> "day off"
+            slot == null -> "outside window"
+            scheduledAt != null && ReminderSchedule.isLate(slot, now) -> "late"
             !force && settings.skipWhileCharging && isOnCharger() -> "charging"
             else -> null
         }
-        val result = if (skippedReason != null) {
+        val result = if (skippedReason != null || plan == null || slot == null) {
             CheckResult.None
         } else {
-            CheckDecider.decide(settings, stepsThisHour, todayTotal, slot.hour)
+            CheckDecider.decide(settings, plan, slot, stepsInSlot, todayTotal)
         }
 
-        notifier.show(result, settings, now)
-        Log.i(TAG, "Check at $slot: hour=$stepsThisHour total=$todayTotal -> $result skipped=$skippedReason")
+        notifier.show(result, settings, slot, now)
+        Log.i(TAG, "Check at $reference: slot=$stepsInSlot total=$todayTotal -> $result skipped=$skippedReason")
 
-        val key = HourBucketing.keyFor(slot)
         checkLogDao.insert(
             CheckLogEntity(
                 timeMillis = now.toInstant().toEpochMilli(),
-                date = key.dateKey,
-                hour = key.hour,
-                stepsThisHour = stepsThisHour,
+                date = date.toString(),
+                slotStartMinute = slot?.startMinute ?: Slots.minuteOfDay(reference),
+                stepsInSlot = stepsInSlot,
                 todayTotal = todayTotal,
-                mode = CheckDecider.modeFor(settings, todayTotal).name,
+                mode = (plan?.let { CheckDecider.modeFor(settings, it, todayTotal) } ?: CheckMode.OFF).name,
                 need = when (result) {
                     is CheckResult.GoalShortfall -> result.need
                     is CheckResult.InactivityShortfall -> result.need
                     CheckResult.None -> 0
                 },
-                catchUpPerHour = (result as? CheckResult.GoalShortfall)?.catchUpPerHour,
+                catchUpPerSlot = (result as? CheckResult.GoalShortfall)?.catchUpPerSlot,
                 notified = result != CheckResult.None,
                 skippedReason = skippedReason,
-            )
+            ),
         )
 
         // Re-arm from whichever is later so an alarm that fires a hair early cannot double-fire.

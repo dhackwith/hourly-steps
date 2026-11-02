@@ -3,18 +3,19 @@ package com.hourlysteps.data.db
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
-import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
-@Entity(tableName = "hourly_steps", primaryKeys = ["date", "hour"])
-data class HourlyStepsEntity(
-    val date: String,
-    val hour: Int,
+/** One interval of steps from Health Services. Summed over any slot length. */
+@Entity(tableName = "step_points", indices = [Index("endMillis")])
+data class StepPointEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val startMillis: Long,
+    val endMillis: Long,
     val steps: Int,
 )
 
@@ -23,46 +24,31 @@ data class CheckLogEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val timeMillis: Long,
     val date: String,
-    val hour: Int,
-    val stepsThisHour: Int,
+    val slotStartMinute: Int,
+    val stepsInSlot: Int,
     val todayTotal: Int,
     val mode: String,
     val need: Int,
-    val catchUpPerHour: Int?,
+    val catchUpPerSlot: Int?,
     val notified: Boolean,
     val skippedReason: String?,
 )
 
 @Dao
-abstract class HourlyStepsDao {
+abstract class StepPointDao {
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    abstract suspend fun insertIgnore(entity: HourlyStepsEntity)
+    @Insert
+    abstract suspend fun insertAll(points: List<StepPointEntity>)
 
-    @Query("UPDATE hourly_steps SET steps = steps + :delta WHERE date = :date AND hour = :hour")
-    abstract suspend fun increment(date: String, hour: Int, delta: Int)
+    /** An interval's end is exclusive, so one ending exactly on a boundary belongs to the earlier period. */
+    @Query("SELECT COALESCE(SUM(steps), 0) FROM step_points WHERE endMillis > :fromMillis AND endMillis <= :toMillis")
+    abstract suspend fun sumBetween(fromMillis: Long, toMillis: Long): Int
 
-    @Transaction
-    open suspend fun addSteps(date: String, hour: Int, delta: Int) {
-        if (delta <= 0) return
-        insertIgnore(HourlyStepsEntity(date, hour, 0))
-        increment(date, hour, delta)
-    }
+    @Query("SELECT COALESCE(SUM(steps), 0) FROM step_points WHERE endMillis > :fromMillis AND endMillis <= :toMillis")
+    abstract fun observeSumBetween(fromMillis: Long, toMillis: Long): Flow<Int>
 
-    @Query("SELECT steps FROM hourly_steps WHERE date = :date AND hour = :hour")
-    abstract suspend fun stepsFor(date: String, hour: Int): Int?
-
-    @Query("SELECT COALESCE(SUM(steps), 0) FROM hourly_steps WHERE date = :date")
-    abstract suspend fun totalFor(date: String): Int
-
-    @Query("SELECT steps FROM hourly_steps WHERE date = :date AND hour = :hour")
-    abstract fun observeStepsFor(date: String, hour: Int): Flow<Int?>
-
-    @Query("SELECT COALESCE(SUM(steps), 0) FROM hourly_steps WHERE date = :date")
-    abstract fun observeTotalFor(date: String): Flow<Int>
-
-    @Query("DELETE FROM hourly_steps WHERE date < :beforeDate")
-    abstract suspend fun pruneBefore(beforeDate: String)
+    @Query("DELETE FROM step_points WHERE endMillis <= :beforeMillis")
+    abstract suspend fun pruneBefore(beforeMillis: Long)
 }
 
 @Dao
@@ -79,11 +65,11 @@ abstract class CheckLogDao {
 }
 
 @Database(
-    entities = [HourlyStepsEntity::class, CheckLogEntity::class],
-    version = 1,
+    entities = [StepPointEntity::class, CheckLogEntity::class],
+    version = 2,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
-    abstract fun hourlyStepsDao(): HourlyStepsDao
+    abstract fun stepPointDao(): StepPointDao
     abstract fun checkLogDao(): CheckLogDao
 }

@@ -24,8 +24,13 @@ object Haptics {
         VibrationStrength.LONG -> longArrayOf(0, 80, 80, 80, 80, 80, 80, 450)
     }
 
+    /**
+     * Plays [pattern] unless Do Not Disturb is on. This only has an effect while the app is on
+     * screen, where a notification doesn't alert; in the background Android drops the request,
+     * and the notification channel's own pattern is what the wearer feels.
+     */
     fun vibrate(context: Context, pattern: LongArray?) {
-        if (pattern == null) return
+        if (pattern == null || !Attention.interruptionsAllowed(context)) return
         val vibrator: Vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             context.getSystemService(VibratorManager::class.java).defaultVibrator
         } else {

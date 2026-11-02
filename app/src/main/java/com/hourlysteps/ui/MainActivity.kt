@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
@@ -16,12 +17,16 @@ import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.hourlysteps.AppContainer
 import com.hourlysteps.HourlyStepsApp
+import com.hourlysteps.domain.PlanId
 import com.hourlysteps.ui.home.HomeScreen
 import com.hourlysteps.ui.home.HomeViewModel
 import com.hourlysteps.ui.onboarding.PermissionsScreen
+import com.hourlysteps.ui.settings.PauseScreen
 import com.hourlysteps.ui.settings.PickerTarget
+import com.hourlysteps.ui.settings.PlanEditorScreen
 import com.hourlysteps.ui.settings.SettingsScreen
 import com.hourlysteps.ui.settings.ValuePickerScreen
+import com.hourlysteps.ui.settings.WeekEditorScreen
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -64,9 +69,16 @@ private object Routes {
     const val HOME = "home"
     const val SETTINGS = "settings"
     const val PERMISSIONS = "permissions"
-    const val PICKER = "picker/{target}"
-    fun picker(target: PickerTarget) = "picker/${target.name}"
+    const val WEEK = "week"
+    const val PAUSE = "pause"
+    const val PLAN = "plan/{plan}"
+    const val PICKER = "picker/{target}/{plan}"
+    fun plan(id: PlanId) = "plan/${id.name}"
+    fun picker(target: PickerTarget, id: PlanId = PlanId.A) = "picker/${target.name}/${id.name}"
 }
+
+private fun NavBackStackEntry.planArg(): PlanId =
+    arguments?.getString("plan")?.let { runCatching { PlanId.valueOf(it) }.getOrNull() } ?: PlanId.A
 
 @Composable
 private fun HourlyStepsNavHost(container: AppContainer, startOnPermissions: Boolean) {
@@ -91,15 +103,28 @@ private fun HourlyStepsNavHost(container: AppContainer, startOnPermissions: Bool
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 container = container,
-                onPick = { navController.navigate(Routes.picker(it)) },
+                onOpenPlan = { navController.navigate(Routes.plan(it)) },
+                onOpenWeek = { navController.navigate(Routes.WEEK) },
+                onOpenPause = { navController.navigate(Routes.PAUSE) },
+                onPickInactivity = { navController.navigate(Routes.picker(PickerTarget.INACTIVITY_THRESHOLD)) },
                 onOpenPermissions = { navController.navigate(Routes.PERMISSIONS) },
             )
         }
+        composable(Routes.PLAN) { entry ->
+            val planId = entry.planArg()
+            PlanEditorScreen(
+                container = container,
+                planId = planId,
+                onPick = { navController.navigate(Routes.picker(it, planId)) },
+            )
+        }
+        composable(Routes.WEEK) { WeekEditorScreen(container) }
+        composable(Routes.PAUSE) { PauseScreen(container, onDone = { navController.popBackStack() }) }
         composable(Routes.PICKER) { entry ->
             val target = entry.arguments?.getString("target")
                 ?.let { runCatching { PickerTarget.valueOf(it) }.getOrNull() }
                 ?: PickerTarget.DAILY_GOAL
-            ValuePickerScreen(container, target, onDone = { navController.popBackStack() })
+            ValuePickerScreen(container, target, entry.planArg(), onDone = { navController.popBackStack() })
         }
         composable(Routes.PERMISSIONS) {
             PermissionsScreen(

@@ -1,10 +1,10 @@
 package com.hourlysteps.domain
 
 enum class CelebrationKind {
-    /** This hour's share of the daily goal was reached. */
+    /** This slot's share of the daily goal was reached. */
     HOURLY_GOAL,
 
-    /** Daily goal already met; this hour's inactivity threshold was reached. */
+    /** Daily goal already met; this slot's inactivity threshold was reached. */
     INACTIVITY_GOAL,
 }
 
@@ -19,31 +19,32 @@ data class Celebration(
 object CelebrationDecider {
 
     /**
-     * Whether reaching [stepsThisHour] in [hour] deserves a celebration right now.
+     * Whether reaching [stepsInSlot] in the current slot deserves a celebration right now. The
+     * caller passes a real slot, so paused days, days off and times outside the window never
+     * reach this.
      *
-     * The target follows the daily goal as it stood when the hour began, not after the latest
-     * steps: otherwise the batch that crosses both the hourly and the daily goal would switch
-     * the hour into "goal met" mode and the hourly celebration would be lost.
+     * The target follows the daily goal as it stood when the slot began, not after the latest
+     * steps: otherwise the batch that crosses both the slot and the daily goal would switch the
+     * slot into "goal met" mode and the slot's celebration would be lost.
      */
     fun decide(
         settings: Settings,
-        stepsThisHour: Int,
+        plan: DayPlan,
+        stepsInSlot: Int,
         todayTotal: Int,
-        hour: Int,
-        alreadyCelebratedThisHour: Boolean,
+        alreadyCelebratedThisSlot: Boolean,
     ): Celebration? {
-        if (!settings.celebrate || alreadyCelebratedThisHour) return null
-        if (hour !in settings.firstHour..settings.lastHour) return null
+        if (!settings.celebrate || alreadyCelebratedThisSlot) return null
 
-        val totalAtHourStart = todayTotal - stepsThisHour
+        val totalAtSlotStart = todayTotal - stepsInSlot
         val (kind, target) = when {
-            totalAtHourStart < settings.dailyGoal ->
-                CelebrationKind.HOURLY_GOAL to GoalCalculator.hourlyGoal(settings)
+            totalAtSlotStart < plan.dailyGoal ->
+                CelebrationKind.HOURLY_GOAL to GoalCalculator.slotGoal(plan, settings.schedule.slotMinutes)
             settings.inactivityEnabled ->
                 CelebrationKind.INACTIVITY_GOAL to settings.inactivityThreshold
             else -> return null
         }
-        if (stepsThisHour < target) return null
-        return Celebration(kind, stepsThisHour, target, todayTotal, settings.dailyGoal)
+        if (stepsInSlot < target) return null
+        return Celebration(kind, stepsInSlot, target, todayTotal, plan.dailyGoal)
     }
 }

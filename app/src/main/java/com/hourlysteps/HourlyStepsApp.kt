@@ -1,6 +1,7 @@
 package com.hourlysteps
 
 import android.app.Application
+import kotlinx.coroutines.launch
 
 class HourlyStepsApp : Application() {
 
@@ -10,6 +11,8 @@ class HourlyStepsApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
-        container.reminderNotifier.createChannels()
+        container.appScope.launch {
+            container.reminderNotifier.syncChannels(container.settingsRepository.current().vibration)
+        }
     }
 }

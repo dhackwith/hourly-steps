@@ -1,31 +1,24 @@
 package com.hourlysteps.domain
 
-import kotlin.math.max
-
 object GoalCalculator {
 
-    /** Number of :50 checks in the window, counted inclusively. */
-    fun slotCount(firstHour: Int, lastHour: Int): Int = max(1, lastHour - firstHour + 1)
+    fun slotCount(plan: DayPlan, slotMinutes: Int): Int = Slots.boundaries(plan, slotMinutes).size
 
-    fun slotCount(settings: Settings): Int = slotCount(settings.firstHour, settings.lastHour)
+    /** Steps required in each slot so that all slots together reach the plan's daily goal. */
+    fun slotGoal(plan: DayPlan, slotMinutes: Int): Int =
+        ceilDiv(plan.dailyGoal, slotCount(plan, slotMinutes).coerceAtLeast(1))
 
-    /** Steps required in each slot so that all slots together reach the daily goal. */
-    fun hourlyGoal(settings: Settings): Int =
-        ceilDiv(settings.dailyGoal, slotCount(settings))
-
-    /** Slots from [hour] through the last slot, inclusive. Zero once the window is over. */
-    fun remainingSlots(settings: Settings, hour: Int): Int {
-        val from = max(hour, settings.firstHour)
-        return if (from > settings.lastHour) 0 else settings.lastHour - from + 1
-    }
+    /** Slots still open at [minuteOfDay], including the current one. Zero once the window is over. */
+    fun remainingSlots(plan: DayPlan, slotMinutes: Int, minuteOfDay: Int): Int =
+        Slots.boundaries(plan, slotMinutes).count { (_, end) -> end > minuteOfDay }
 
     /**
      * Steps per slot needed over the remaining slots to still reach the daily goal.
      * Null when no slots remain or the goal is already met.
      */
-    fun catchUpPerHour(settings: Settings, todayTotal: Int, hour: Int): Int? {
-        val remaining = remainingSlots(settings, hour)
-        val deficit = settings.dailyGoal - todayTotal
+    fun catchUpPerSlot(plan: DayPlan, slotMinutes: Int, todayTotal: Int, minuteOfDay: Int): Int? {
+        val remaining = remainingSlots(plan, slotMinutes, minuteOfDay)
+        val deficit = plan.dailyGoal - todayTotal
         if (remaining == 0 || deficit <= 0) return null
         return ceilDiv(deficit, remaining)
     }

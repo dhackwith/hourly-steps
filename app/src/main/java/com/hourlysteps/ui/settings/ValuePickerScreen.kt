@@ -20,11 +20,15 @@ import androidx.wear.compose.material3.Picker
 import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.rememberPickerState
 import com.hourlysteps.AppContainer
+import com.hourlysteps.domain.DayPlan
 import com.hourlysteps.domain.GoalCalculator
+import com.hourlysteps.domain.PlanId
 import com.hourlysteps.domain.Settings
 import com.hourlysteps.ui.formatSlot
 import com.hourlysteps.ui.formatSteps
 import kotlinx.coroutines.launch
+
+enum class PickerTarget { DAILY_GOAL, FIRST_HOUR, LAST_HOUR, INACTIVITY_THRESHOLD }
 
 /** Options, labels, and the setter for one picker target. */
 private data class PickerSpec(
@@ -36,50 +40,68 @@ private data class PickerSpec(
     val caption: (Settings, Int) -> String? = { _, _ -> null },
 )
 
-private fun specFor(target: PickerTarget): PickerSpec = when (target) {
-    PickerTarget.DAILY_GOAL -> PickerSpec(
-        title = "Daily goal",
-        values = (Settings.MIN_DAILY_GOAL..Settings.MAX_DAILY_GOAL step Settings.DAILY_GOAL_STEP).toList(),
-        label = ::formatSteps,
-        current = { it.dailyGoal },
-        apply = { s, v -> s.copy(dailyGoal = v) },
-        caption = { s, v -> "≈ ${formatSteps(GoalCalculator.hourlyGoal(s.copy(dailyGoal = v)))}/hour" },
-    )
-    PickerTarget.FIRST_HOUR -> PickerSpec(
-        title = "First reminder",
-        values = (0..23).toList(),
-        label = ::formatSlot,
-        current = { it.firstHour },
-        // Keep first <= last by pushing the last reminder later if needed.
-        apply = { s, v -> s.copy(firstHour = v, lastHour = maxOf(v, s.lastHour)) },
-        caption = { s, v -> slotsCaption(s.copy(firstHour = v, lastHour = maxOf(v, s.lastHour))) },
-    )
-    PickerTarget.LAST_HOUR -> PickerSpec(
-        title = "Last reminder",
-        values = (0..23).toList(),
-        label = ::formatSlot,
-        current = { it.lastHour },
-        apply = { s, v -> s.copy(lastHour = v, firstHour = minOf(v, s.firstHour)) },
-        caption = { s, v -> slotsCaption(s.copy(lastHour = v, firstHour = minOf(v, s.firstHour))) },
-    )
+private fun Settings.withPlan(id: PlanId, transform: (DayPlan) -> DayPlan): Settings =
+    copy(schedule = schedule.withPlan(id, transform(schedule.plan(id))))
+
+private fun specFor(target: PickerTarget, planId: PlanId): PickerSpec = when (target) {
+    PickerTarget.DAILY_GOAL -> {
+        val edit = { s: Settings, v: Int -> s.withPlan(planId) { it.copy(dailyGoal = v) } }
+        PickerSpec(
+            title = "Daily goal",
+            values = (Settings.MIN_DAILY_GOAL..Settings.MAX_DAILY_GOAL step Settings.DAILY_GOAL_STEP).toList(),
+            label = ::formatSteps,
+            current = { it.schedule.plan(planId).dailyGoal },
+            apply = edit,
+            caption = { s, v ->
+                val edited = edit(s, v).schedule
+                "≈ ${formatSteps(GoalCalculator.slotGoal(edited.plan(planId), edited.slotMinutes))}/hour"
+            },
+        )
+    }
+    PickerTarget.FIRST_HOUR -> {
+        // Keeps first <= last by pushing the last reminder later if needed.
+        val edit = { s: Settings, v: Int -> s.withPlan(planId) { it.withFirstHour(v) } }
+        PickerSpec(
+            title = "First reminder",
+            values = (0..23).toList(),
+            label = ::formatSlot,
+            current = { it.schedule.plan(planId).firstHour },
+            apply = edit,
+            caption = { s, v -> slotsCaption(edit(s, v), planId) },
+        )
+    }
+    PickerTarget.LAST_HOUR -> {
+        val edit = { s: Settings, v: Int -> s.withPlan(planId) { it.withLastHour(v) } }
+        PickerSpec(
+            title = "Last reminder",
+            values = (0..23).toList(),
+            label = ::formatSlot,
+            current = { it.schedule.plan(planId).lastHour },
+            apply = edit,
+            caption = { s, v -> slotsCaption(edit(s, v), planId) },
+        )
+    }
     PickerTarget.INACTIVITY_THRESHOLD -> PickerSpec(
         title = "Inactivity goal",
         values = (Settings.MIN_INACTIVITY_THRESHOLD..Settings.MAX_INACTIVITY_THRESHOLD step Settings.INACTIVITY_THRESHOLD_STEP).toList(),
-        label = { "${formatSteps(it)}" },
+        label = { formatSteps(it) },
         current = { it.inactivityThreshold },
         apply = { s, v -> s.copy(inactivityThreshold = v) },
         caption = { _, _ -> "steps per hour" },
     )
 }
 
-private fun slotsCaption(s: Settings): String =
-    "${GoalCalculator.slotCount(s)} reminders · ≈ ${formatSteps(GoalCalculator.hourlyGoal(s))}/hour"
+private fun slotsCaption(s: Settings, planId: PlanId): String {
+    val plan = s.schedule.plan(planId)
+    val slotMinutes = s.schedule.slotMinutes
+    return "${GoalCalculator.slotCount(plan, slotMinutes)} reminders · ≈ ${formatSteps(GoalCalculator.slotGoal(plan, slotMinutes))}/hour"
+}
 
 @Composable
-fun ValuePickerScreen(container: AppContainer, target: PickerTarget, onDone: () -> Unit) {
+fun ValuePickerScreen(container: AppContainer, target: PickerTarget, planId: PlanId, onDone: () -> Unit) {
     val settings by container.settingsRepository.settings.collectAsStateWithLifecycle(null)
     val loaded = settings ?: return
-    val spec = remember(target) { specFor(target) }
+    val spec = remember(target, planId) { specFor(target, planId) }
     val initialIndex = remember(loaded, spec) {
         spec.values.indexOf(spec.current(loaded)).takeIf { it >= 0 }
             ?: spec.values.indexOfFirst { it >= spec.current(loaded) }.coerceAtLeast(0)

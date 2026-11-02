@@ -12,6 +12,10 @@ when you are short of an hourly step goal derived from your daily goal.
   fireworks show straight away. If the watch screen is asleep, it is lit briefly so the alert is
   visible on wrist raise, unless Do Not Disturb or Bedtime mode is on. Turn it off with
   **Celebrate goals** in Settings.
+- Your week doesn't have to be Monday to Friday. Use one plan or two, each with its own goal and
+  hours, and set every day of the week to Plan A, Plan B or Off.
+- **Pause reminders** for the rest of today, through tomorrow, for a week, or until you resume.
+  Steps keep counting.
 
 Design: [docs/HourlyStepsPlan.md](docs/HourlyStepsPlan.md). Planned v2 features: [docs/V2Plan.md](docs/V2Plan.md).
 
@@ -44,9 +48,10 @@ To exercise both sides of a check with constant walking, change the goal instead
 a high daily goal (for example 30,000) produces a shortfall reminder, a low one (1,000) puts the
 day in the goal-met state.
 
-Debug builds have **Run check now** and **Show celebration** buttons at the bottom of Settings.
-Run check now runs the :50 check immediately, ignoring the charging skip. Show celebration opens
-the fireworks screen. To trigger a celebration from the background instead, for example with the
+Debug builds have **Run check now**, **Show celebration** and **Slot length** buttons at the bottom
+of Settings. Run check now runs the check immediately, ignoring the charging skip. Show celebration
+opens the fireworks screen. Slot length cycles 30, 60 and 120 minutes; screen text still says "this
+hour" until the real interval setting ships. To trigger a celebration from the background instead, for example with the
 watch on its face or asleep, debug builds also accept:
 
 ```bash
@@ -73,13 +78,41 @@ adb shell dumpsys battery reset
 
 Exact alarms are off by default on Wear OS. The app's "On-time reminders" button opens the
 system "Alarms and reminders" list, where you pick Hourly Steps and turn it on. Without it, checks
-run inside a 10-minute window around :50.
+run some time in the 10 minutes before :50.
+
+Checklist for reminder changes, because each of these behaves differently on Wear OS:
+
+- **App open:** no pop-up appears, but the watch should vibrate.
+- **Watch face showing:** the alert pops up and the channel pattern plays.
+- **Screen asleep:** the screen wakes, then the alert pops up and the channel pattern plays.
+- **Do Not Disturb on:** the screen stays asleep and nothing buzzes.
+
+To sleep the screen and jump the clock to just before a check:
+
+```bash
+adb shell input keyevent KEYCODE_SLEEP
+```
+
+```bash
+adb shell cmd time_detector set_auto_detection_enabled false
+```
+
+```bash
+adb shell cmd alarm set-time <epoch-milliseconds>
+```
+
+Turn automatic time back on afterwards with the same `time_detector` command set to `true`.
+
+Wear OS only plays a notification channel's own vibration for a background app, and shows the
+pop-up only for a channel that vibrates. A channel's pattern can't change after creation, so the
+vibration strength is part of the channel id, and "Off" uses an imperceptible 1 ms pulse.
 
 ## Layout
 
 | Package | Role |
 |---|---|
-| `domain` | Pure logic: goal maths, catch-up pace, check decision, next-alarm time, hour bucketing. Fully unit-tested. |
-| `data` | Settings (DataStore), per-hour step buckets and check log (Room), Health Services passive listener. |
-| `reminder` | Exact-alarm chain, the :50 check, notifications and vibration, reschedule on boot/time change. |
-| `ui` | Compose for Wear OS Material 3: Home ring, Settings, value pickers, permissions. |
+| `domain` | Pure logic: schedule and slots, goal maths, catch-up pace, check decision, next-alarm time. Fully unit-tested. |
+| `data` | Settings (DataStore), raw step points and check log (Room), Health Services passive listener. |
+| `reminder` | Exact-alarm chain, the slot check, notifications and vibration, reschedule on boot/time change. |
+| `celebration` | Goal celebration trigger, fireworks screen. |
+| `ui` | Compose for Wear OS Material 3: Home ring, Settings, plan and week editors, pause, pickers, permissions. |

@@ -22,9 +22,10 @@ class DebugCelebrateReceiver : BroadcastReceiver() {
         container.appScope.launch {
             try {
                 val settings = container.settingsRepository.current()
-                val goal = GoalCalculator.hourlyGoal(settings)
+                val plan = settings.schedule.planA
+                val goal = GoalCalculator.slotGoal(plan, settings.schedule.slotMinutes)
                 container.celebrationManager.celebrate(
-                    Celebration(CelebrationKind.HOURLY_GOAL, goal + 23, goal, settings.dailyGoal / 2, settings.dailyGoal),
+                    Celebration(CelebrationKind.HOURLY_GOAL, goal + 23, goal, plan.dailyGoal / 2, plan.dailyGoal),
                 )
             } finally {
                 pending.finish()

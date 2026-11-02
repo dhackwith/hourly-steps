@@ -24,18 +24,25 @@ final model, instead of being reworked.
 
 ---
 
-## Phase A — Schedule model, pause, and the asleep-screen fix
+## Phase A — Schedule model, pause, and the asleep-screen fix (done)
 
 ### 0. Reminder when the screen is asleep
 
-**Problem.** The goal celebration only appeared as a notification dot when the watch was in
-always-on mode until a brief screen wake was added. The :50 reminder has no such wake, and has
-never been tested with the screen asleep.
+**Found on the emulator.** With the screen asleep the reminder only added a dot to the watch
+face. Separately, the app's own vibration was dropped in the background, so the Off / Short /
+Long setting had no effect.
 
-**Plan.** Reproduce on the emulator (screen asleep, jump the clock to :49:50). If the reminder
-is not shown, reuse the celebration's wake (`TURN_SCREEN_ON` wake lock, skipped under Do Not
-Disturb / Bedtime) in `ReminderNotifier`. Add the "asleep" case to the emulator checklist in the
-README.
+**Fix.**
+- The reminder wakes the screen first, like the celebration (`Attention`, skipped under Do Not
+  Disturb / Bedtime), so the alert is visible.
+- Wear OS only plays a channel's own pattern for a background app, and pops up the alert only
+  for a channel that vibrates. Channel ids now include the vibration strength, with only the
+  current strength's channels kept. "Off" uses an imperceptible 1 ms pulse so the alert appears.
+- Changing the vibration strength creates new channels, so a change made to a channel in system
+  settings does not carry over to the new strength.
+
+**Also fixed.** `Clock.systemDefaultZone()` captured the time zone once, so a running app kept
+the old zone after travel. `SystemZoneClock` follows the device.
 
 ### 2 + 8 + 11. The schedule model
 
@@ -45,10 +52,9 @@ New model:
 
 ```kotlin
 data class DayPlan(
-    val enabled: Boolean = true,
     val dailyGoal: Int = 7000,
-    val windowStart: LocalTime = LocalTime.of(8, 0),   // first slot starts
-    val windowEnd: LocalTime = LocalTime.of(20, 0),    // last slot ends
+    val startMinute: Int = 480,    // first slot starts; minutes of the day
+    val endMinute: Int = 1200,     // last slot ends, exclusive; 1440 is midnight
 )
 
 enum class DayAssignment { PLAN_A, PLAN_B, OFF }
@@ -68,8 +74,8 @@ data class Schedule(
   TWO_PLANS mode each day of the week is assigned to Plan A, Plan B, or Off, so a
   Thursday-to-Sunday worker, a three-days-off week, or alternating days all work. In EVERY_DAY
   mode every day uses Plan A and days can only be toggled on or off.
-- **Slots.** A day's slots are `windowStart`, `windowStart + slotMinutes`, … while
-  `slotEnd <= windowEnd`. The default window 8:00 → 20:00 with 60-minute slots is the same 12
+- **Slots.** A day's slots run from `startMinute` in steps of `slotMinutes`, the last ending at
+  `endMinute` (shorter if the window is not a multiple). The default 8:00 → 20:00 with 60-minute slots is the same 12
   slots as v1 (checks at 8:50 … 19:50). The check fires at `slotEnd − lead`, where lead is a
   sixth of the slot: 5 min for 30, 10 min for 60, 20 min for 120.
 - **Slot goal** = `ceil(dailyGoal / slotCount)`, per plan. The two plans can have different
@@ -77,7 +83,7 @@ data class Schedule(
 - **Days off** (feature 2): no checks, no celebrations, and the Home ring shows "Day off".
   Days off are streak-neutral (see feature 7).
 - **Window must not cross midnight.** Night-shift windows stay out of scope; the model allows
-  them later without migration because start and end are `LocalTime`s.
+  them later without migration because start and end are plain minutes.
 - **Catch-up pace** is unchanged: deficit over the remaining slots of today's plan.
 
 **Settings UI.** Settings becomes grouped:
@@ -106,11 +112,12 @@ Debug (debug builds)
 The plan editor is one screen: Daily goal, First reminder, Last reminder, with the live
 "12 reminders · ≈ 584 steps/hour" caption.
 
-The week editor is a row of seven day chips (Mon … Sun, starting on the locale's first day of
-the week). In Two plans mode a tap cycles each chip A → B → Off, with the chip coloured by
-plan; in Every day mode a tap toggles On → Off. A caption underneath summarises the result,
-for example "Plan A: Thu–Sun · Plan B: Mon–Tue · Off: Wed". Plan names are fixed ("Plan A",
-"Plan B") in this version; renaming can come later.
+The week editor is a scrolling list of seven full-width day buttons, starting on the locale's
+first day of the week. Seven chips in one row would be too small to tap on a round watch. With
+two plans a tap cycles each day A → B → Off, with the button coloured by plan; with one plan a
+tap toggles On → Off. A caption at the top summarises the result, for example
+"A: Thu–Sun · B: Mon · Off: Tue, Wed". Plan names are fixed ("Plan A", "Plan B") in this version;
+renaming can come later.
 
 **Storage.** Settings stay in Preferences DataStore with new keys; old keys migrate on first
 read (old `dailyGoal`/`firstHour`/`lastHour` become Plan A, mode EVERY_DAY, all days on).
@@ -120,11 +127,11 @@ be summed:
 
 ```
 step_points(startMillis, endMillis, steps)      indexed on endMillis
-day_summary(date, steps, dailyGoal, slotsHit, slotsTotal, status)   // written at day end; feeds streaks
 ```
 
 Room version 2 with a migration that converts each `hourly_steps` row into one point spanning
-that hour. Retention: points 14 days, summaries 400 days.
+that hour. Retention: points 14 days. The `day_summary` table moves to Phase D with streaks, the
+only thing that reads it.
 
 **Engine changes.** `ReminderSchedule.nextCheckTime(now, schedule)` walks days forward,
 skipping days off and paused days. `CheckDecider` and `CelebrationDecider` take a `Slot` and a

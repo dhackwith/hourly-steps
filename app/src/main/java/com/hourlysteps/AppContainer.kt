@@ -9,12 +9,15 @@ import androidx.core.content.ContextCompat
 import androidx.room.Room
 import com.hourlysteps.celebration.CelebrationManager
 import com.hourlysteps.data.db.AppDatabase
+import com.hourlysteps.data.db.MIGRATION_1_2
 import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.data.steps.StepsRepository
+import com.hourlysteps.domain.SystemZoneClock
 import com.hourlysteps.reminder.ReminderCheck
 import com.hourlysteps.reminder.ReminderNotifier
 import com.hourlysteps.reminder.ReminderScheduler
 import java.time.Clock
+import java.time.LocalDate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,15 +28,16 @@ private const val TAG = "AppContainer"
 class AppContainer(private val context: Context) {
 
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    val clock: Clock = Clock.systemDefaultZone()
+    val clock: Clock = SystemZoneClock()
 
     val settingsRepository = SettingsRepository(context)
 
     private val database: AppDatabase = Room.databaseBuilder(context, AppDatabase::class.java, "hourly-steps.db")
+        .addMigrations(MIGRATION_1_2)
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 
-    val stepsRepository = StepsRepository(context, database.hourlyStepsDao(), clock)
+    val stepsRepository = StepsRepository(context, database.stepPointDao(), clock)
     val reminderNotifier = ReminderNotifier(context, settingsRepository, stepsRepository, clock)
     val reminderScheduler = ReminderScheduler(context, settingsRepository, clock)
     val reminderCheck = ReminderCheck(
@@ -83,5 +87,12 @@ class AppContainer(private val context: Context) {
         runCatching { stepsRepository.startPassiveMonitoring() }
             .onFailure { Log.e(TAG, "Passive monitoring registration failed", it) }
         reminderScheduler.ensureScheduled()
+    }
+
+    /** Pauses through [through] inclusive; a null date resumes. Clears any reminder on screen. */
+    suspend fun setPausedThrough(through: LocalDate?) {
+        settingsRepository.update { it.copy(pausedThrough = through) }
+        if (through != null) reminderNotifier.cancel()
+        ensureArmed()
     }
 }

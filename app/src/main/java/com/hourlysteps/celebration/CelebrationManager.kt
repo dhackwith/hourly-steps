@@ -6,7 +6,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
@@ -16,7 +15,9 @@ import com.hourlysteps.data.steps.StepsRepository
 import com.hourlysteps.domain.Celebration
 import com.hourlysteps.domain.CelebrationDecider
 import com.hourlysteps.domain.CelebrationKind
-import com.hourlysteps.domain.HourBucketing
+import com.hourlysteps.domain.Slots
+import com.hourlysteps.domain.VibrationStrength
+import com.hourlysteps.reminder.Attention
 import com.hourlysteps.reminder.Haptics
 import com.hourlysteps.reminder.ReminderNotifier
 import com.hourlysteps.ui.formatSteps
@@ -51,15 +52,21 @@ class CelebrationManager(
     /** Called after each batch of new step data. */
     suspend fun onStepsRecorded() {
         val now = ZonedDateTime.now(clock)
-        val key = hourKey(now)
+        val date = now.toLocalDate()
+        val settings = settingsRepository.current()
+        if (settings.isPaused(date)) return
+        val plan = settings.schedule.planFor(date.dayOfWeek) ?: return
+        val slot = Slots.at(settings.schedule, now) ?: return
+
+        val key = "$date#${slot.startMinute}"
         val celebration = CelebrationDecider.decide(
-            settings = settingsRepository.current(),
-            stepsThisHour = stepsRepository.stepsThisHour(now),
-            todayTotal = stepsRepository.todayTotal(now),
-            hour = now.hour,
-            alreadyCelebratedThisHour = prefs.getString(KEY_LAST_HOUR, null) == key,
+            settings = settings,
+            plan = plan,
+            stepsInSlot = stepsRepository.stepsInSlot(slot),
+            todayTotal = stepsRepository.dayTotal(date),
+            alreadyCelebratedThisSlot = prefs.getString(KEY_LAST_SLOT, null) == key,
         ) ?: return
-        prefs.edit { putString(KEY_LAST_HOUR, key) }
+        prefs.edit { putString(KEY_LAST_SLOT, key) }
         celebrate(celebration)
     }
 
@@ -69,7 +76,9 @@ class CelebrationManager(
     suspend fun celebrate(celebration: Celebration) {
         Log.i(TAG, "Celebrating $celebration uiVisible=${isUiVisible()}")
         reminderNotifier.cancel()
-        val pattern = Haptics.celebrationPattern(settingsRepository.current().vibration)
+        val strength = settingsRepository.current().vibration
+        reminderNotifier.syncChannels(strength)
+        val pattern = Haptics.celebrationPattern(strength)
 
         if (isUiVisible()) {
             // The app is on screen, so it may start an activity itself. A notification would not
@@ -78,31 +87,10 @@ class CelebrationManager(
             Haptics.vibrate(context, pattern)
             return
         }
-        // Wear OS ignores full-screen intents while the watch is in always-on (ambient) mode, and
-        // only shows the alert once the screen is interactive. Light the screen first, like the
-        // built-in reminders do, unless Do Not Disturb / Bedtime is filtering notifications.
-        if (!powerManager.isInteractive && notificationsUnfiltered()) {
-            wakeScreen()
-            delay(WAKE_SETTLE_MS)
-        }
-        postNotification(celebration)
+        // Wear OS ignores full-screen intents in always-on mode, so light the screen first.
+        if (Attention.wakeScreenIfAsleep(context)) delay(Attention.WAKE_SETTLE_MS)
+        postNotification(celebration, strength)
         Haptics.vibrate(context, pattern)
-    }
-
-    private val powerManager: PowerManager
-        get() = context.getSystemService(PowerManager::class.java)
-
-    private fun notificationsUnfiltered(): Boolean =
-        notificationManager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALL
-
-    @Suppress("DEPRECATION") // No non-deprecated way for a background app to light the screen.
-    private fun wakeScreen() {
-        runCatching {
-            powerManager.newWakeLock(
-                PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP or PowerManager.ON_AFTER_RELEASE,
-                "hourlysteps:celebrate",
-            ).acquire(WAKE_HOLD_MS)
-        }.onFailure { Log.w(TAG, "Could not wake the screen", it) }
     }
 
     fun canUseFullScreenIntent(): Boolean =
@@ -113,7 +101,7 @@ class CelebrationManager(
         notificationManager.cancel(NOTIFICATION_ID)
     }
 
-    private fun postNotification(celebration: Celebration) {
+    private fun postNotification(celebration: Celebration, strength: VibrationStrength) {
         val activityIntent = PendingIntent.getActivity(
             context,
             REQUEST_CODE,
@@ -127,7 +115,7 @@ class CelebrationManager(
             },
         )
         val text = context.getString(R.string.celebration_steps_this_hour, formatSteps(celebration.stepsThisHour))
-        val builder = NotificationCompat.Builder(context, ReminderNotifier.CHANNEL_CELEBRATION)
+        val builder = NotificationCompat.Builder(context, ReminderNotifier.channelId(ReminderNotifier.CHANNEL_CELEBRATION, strength))
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(text)
@@ -142,17 +130,10 @@ class CelebrationManager(
         notificationManager.notify(NOTIFICATION_ID, builder.build())
     }
 
-    private fun hourKey(now: ZonedDateTime): String {
-        val key = HourBucketing.keyFor(now)
-        return "${key.dateKey}#${key.hour}"
-    }
-
     companion object {
         const val NOTIFICATION_ID = 1002
         private const val REQUEST_CODE = 2
-        private const val KEY_LAST_HOUR = "last_celebrated_hour"
+        private const val KEY_LAST_SLOT = "last_celebrated_slot"
         private const val NOTIFICATION_TIMEOUT_MS = 10 * 60 * 1000L
-        private const val WAKE_HOLD_MS = 4_000L
-        private const val WAKE_SETTLE_MS = 400L
     }
 }
