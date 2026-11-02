@@ -13,6 +13,9 @@ import java.time.ZonedDateTime
 
 private const val TAG = "ReminderScheduler"
 
+/** Why a reminder is coming back: the optional second nudge, or the wearer pressed Snooze. */
+enum class FollowUpKind { SECOND_NUDGE, SNOOZE }
+
 /** Arms the single one-shot alarm for the next slot check. */
 class ReminderScheduler(
     private val context: Context,
@@ -44,6 +47,39 @@ class ReminderScheduler(
         alarmManager.cancel(pendingIntent(0L))
     }
 
+    /**
+     * Arms a reminder to come back later in the slot, replacing any already armed. Without the
+     * exact-alarm permission it may run later than asked; a follow-up that lands after its slot
+     * has ended is skipped as late.
+     */
+    fun scheduleFollowUp(at: ZonedDateTime, kind: FollowUpKind) {
+        val millis = at.toInstant().toEpochMilli()
+        val pi = followUpIntent(millis, kind)
+        if (canScheduleExact()) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)
+        } else {
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, pi)
+        }
+        Log.d(TAG, "$kind scheduled for $at")
+    }
+
+    fun cancelFollowUp() {
+        alarmManager.cancel(followUpIntent(0L, FollowUpKind.SNOOZE))
+    }
+
+    private fun followUpIntent(scheduledAtMillis: Long, kind: FollowUpKind): PendingIntent {
+        val intent = Intent(context, ReminderReceiver::class.java)
+            .setAction(ReminderReceiver.ACTION_FOLLOW_UP)
+            .putExtra(ReminderReceiver.EXTRA_SCHEDULED_AT, scheduledAtMillis)
+            .putExtra(ReminderReceiver.EXTRA_FOLLOW_UP_KIND, kind.name)
+        return PendingIntent.getBroadcast(
+            context,
+            FOLLOW_UP_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
     private fun schedule(at: ZonedDateTime) {
         val millis = at.toInstant().toEpochMilli()
         val pi = pendingIntent(millis)
@@ -72,6 +108,7 @@ class ReminderScheduler(
 
     private companion object {
         const val REQUEST_CODE = 1
+        const val FOLLOW_UP_REQUEST_CODE = 3
         const val FALLBACK_WINDOW_MS = 10 * 60 * 1000L
     }
 }

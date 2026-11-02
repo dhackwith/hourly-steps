@@ -129,6 +129,21 @@ class TodaySummaryTest {
     }
 
     @Test
+    fun `a follow-up doesn't change a slot's outcome but is the last check`() {
+        val main = check(10, notified = true)
+        val followUp = CheckRecord(millis(10, 55), 600, 0, false, CheckSkip.WORKOUT, isFollowUp = true)
+        val s = summary(at(11), listOf(point(10, 30, 10)), listOf(main, followUp))
+        assertEquals(SlotOutcome.SHORT, s.row(10).outcome)
+        assertEquals(followUp, s.lastCheck)
+    }
+
+    @Test
+    fun `a slot with only a follow-up counts as not checked`() {
+        val followUp = CheckRecord(millis(10, 55), 600, 0, true, null, isFollowUp = true)
+        assertEquals(TodaySummary.REASON_NOT_CHECKED, summary(at(11), listOf(point(10, 30, 10)), listOf(followUp)).row(10).reason)
+    }
+
+    @Test
     fun `30 minute slots split the steps`() {
         val half = settings.copy(schedule = Schedule(slotMinutes = 30))
         val s = summary(at(11), listOf(point(10, 10, 300), point(10, 40, 50)), s = half)

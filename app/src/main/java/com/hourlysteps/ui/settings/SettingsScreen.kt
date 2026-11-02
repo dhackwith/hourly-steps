@@ -152,6 +152,31 @@ fun SettingsScreen(
             }
             item {
                 SwitchButton(
+                    checked = settings.secondNudge,
+                    onCheckedChange = { checked -> update { it.copy(secondNudge = checked) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Second nudge") },
+                    secondaryLabel = { Text("Buzz again near the end if short") },
+                )
+            }
+            item {
+                SwitchButton(
+                    checked = settings.skipDuringWorkouts,
+                    onCheckedChange = { checked -> update { it.copy(skipDuringWorkouts = checked) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Skip during workouts") },
+                )
+            }
+            item {
+                SwitchButton(
+                    checked = settings.skipWhileAsleep,
+                    onCheckedChange = { checked -> update { it.copy(skipWhileAsleep = checked) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Skip while asleep") },
+                )
+            }
+            item {
+                SwitchButton(
                     checked = settings.skipWhileCharging,
                     onCheckedChange = { checked -> update { it.copy(skipWhileCharging = checked) } },
                     modifier = Modifier.fillMaxWidth(),

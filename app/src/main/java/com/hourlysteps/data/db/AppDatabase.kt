@@ -1,5 +1,6 @@
 package com.hourlysteps.data.db
 
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Entity
@@ -32,6 +33,8 @@ data class CheckLogEntity(
     val catchUpPerSlot: Int?,
     val notified: Boolean,
     val skippedReason: String?,
+    /** True for a second nudge or a snoozed reminder coming back, not the slot's main check. */
+    @ColumnInfo(defaultValue = "0") val isFollowUp: Boolean = false,
 )
 
 @Dao
@@ -72,7 +75,7 @@ abstract class CheckLogDao {
 
 @Database(
     entities = [StepPointEntity::class, CheckLogEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {

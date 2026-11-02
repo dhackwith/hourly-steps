@@ -12,6 +12,7 @@ data class CheckRecord(
     val stepsInSlot: Int,
     val notified: Boolean,
     val skippedReason: String?,
+    val isFollowUp: Boolean = false,
 )
 
 enum class SlotOutcome {
@@ -68,7 +69,7 @@ data class TodaySummary(
             val paused = settings.isPaused(today)
             val total = points.sumOf { it.steps }
             val nowMillis = now.toInstant().toEpochMilli()
-            val lastCheckBySlot = checks.sortedBy { it.timeMillis }.associateBy { it.slotStartMinute }
+            val lastCheckBySlot = checks.filterNot { it.isFollowUp }.sortedBy { it.timeMillis }.associateBy { it.slotStartMinute }
 
             val rows = plan?.let { p ->
                 val goal = GoalCalculator.slotGoal(p, slotMinutes)

@@ -4,7 +4,10 @@ import android.util.Log
 import androidx.health.services.client.PassiveListenerService
 import androidx.health.services.client.data.DataPointContainer
 import androidx.health.services.client.data.DataType
+import androidx.health.services.client.data.UserActivityInfo
+import androidx.health.services.client.data.UserActivityState
 import com.hourlysteps.HourlyStepsApp
+import com.hourlysteps.domain.UserActivity
 import kotlinx.coroutines.runBlocking
 
 private const val TAG = "StepsListener"
@@ -25,6 +28,17 @@ class StepsPassiveListenerService : PassiveListenerService() {
                 container.surfaceUpdater.onStepsChanged()
             }.onFailure { Log.e(TAG, "Failed to record steps", it) }
         }
+    }
+
+    override fun onUserActivityInfoReceived(info: UserActivityInfo) {
+        val activity = when (info.userActivityState) {
+            UserActivityState.USER_ACTIVITY_EXERCISE -> UserActivity.EXERCISE
+            UserActivityState.USER_ACTIVITY_ASLEEP -> UserActivity.ASLEEP
+            UserActivityState.USER_ACTIVITY_PASSIVE -> UserActivity.PASSIVE
+            else -> UserActivity.UNKNOWN
+        }
+        Log.i(TAG, "Activity is now $activity, since ${info.stateChangeTime}")
+        (application as HourlyStepsApp).container.activityStore.record(activity, info.stateChangeTime.toEpochMilli())
     }
 
     override fun onPermissionLost() {

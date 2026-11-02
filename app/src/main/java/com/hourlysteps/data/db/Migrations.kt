@@ -68,3 +68,10 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         db.execSQL("ALTER TABLE check_log_new RENAME TO check_log")
     }
 }
+
+/** v2 to v3: the check log records follow-ups as well as main checks. */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE check_log ADD COLUMN isFollowUp INTEGER NOT NULL DEFAULT 0")
+    }
+}

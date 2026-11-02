@@ -10,7 +10,9 @@ import androidx.room.Room
 import com.hourlysteps.celebration.CelebrationManager
 import com.hourlysteps.data.db.AppDatabase
 import com.hourlysteps.data.db.MIGRATION_1_2
+import com.hourlysteps.data.db.MIGRATION_2_3
 import com.hourlysteps.data.settings.SettingsRepository
+import com.hourlysteps.data.steps.ActivityStore
 import com.hourlysteps.data.steps.DayStatusProvider
 import com.hourlysteps.data.steps.StepsRepository
 import com.hourlysteps.domain.CheckRecord
@@ -21,6 +23,7 @@ import com.hourlysteps.reminder.ReminderScheduler
 import com.hourlysteps.surfaces.SurfaceUpdater
 import java.time.Clock
 import java.time.LocalDate
+import java.time.ZonedDateTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -38,19 +41,21 @@ class AppContainer(private val context: Context) {
     val settingsRepository = SettingsRepository(context)
 
     private val database: AppDatabase = Room.databaseBuilder(context, AppDatabase::class.java, "hourly-steps.db")
-        .addMigrations(MIGRATION_1_2)
+        .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 
     val stepsRepository = StepsRepository(context, database.stepPointDao(), clock)
     val dayStatusProvider = DayStatusProvider(settingsRepository, stepsRepository, clock)
     val surfaceUpdater = SurfaceUpdater(context)
+    val activityStore = ActivityStore(context)
     val reminderNotifier = ReminderNotifier(context, settingsRepository, stepsRepository, clock)
     val reminderScheduler = ReminderScheduler(context, settingsRepository, clock)
     val reminderCheck = ReminderCheck(
         context = context,
         settingsRepository = settingsRepository,
         stepsRepository = stepsRepository,
+        activityStore = activityStore,
         notifier = reminderNotifier,
         scheduler = reminderScheduler,
         checkLogDao = database.checkLogDao(),
@@ -61,7 +66,7 @@ class AppContainer(private val context: Context) {
     /** Today's check outcomes, for the Today page. */
     fun observeDayChecks(date: LocalDate): Flow<List<CheckRecord>> =
         database.checkLogDao().observeForDate(date.toString()).map { rows ->
-            rows.map { CheckRecord(it.timeMillis, it.slotStartMinute, it.stepsInSlot, it.notified, it.skippedReason) }
+            rows.map { CheckRecord(it.timeMillis, it.slotStartMinute, it.stepsInSlot, it.notified, it.skippedReason, it.isFollowUp) }
         }
 
     /** True while one of the app's screens is in the foreground; set by [com.hourlysteps.ui.MainActivity]. */
@@ -72,6 +77,7 @@ class AppContainer(private val context: Context) {
         context = context,
         settingsRepository = settingsRepository,
         stepsRepository = stepsRepository,
+        activityStore = activityStore,
         reminderNotifier = reminderNotifier,
         clock = clock,
         isUiVisible = { uiVisible },
@@ -107,7 +113,13 @@ class AppContainer(private val context: Context) {
     /** Pauses through [through] inclusive; a null date resumes. Clears any reminder on screen. */
     suspend fun setPausedThrough(through: LocalDate?) {
         settingsRepository.update { it.copy(pausedThrough = through) }
-        if (through != null) reminderNotifier.cancel()
+        if (through != null) {
+            reminderNotifier.cancel()
+            reminderScheduler.cancelFollowUp()
+        }
         ensureArmed()
     }
+
+    /** The "Pause today" button on a reminder. */
+    suspend fun pauseToday() = setPausedThrough(ZonedDateTime.now(clock).toLocalDate())
 }

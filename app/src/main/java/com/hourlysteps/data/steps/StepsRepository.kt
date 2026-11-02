@@ -46,6 +46,7 @@ class StepsRepository(
     suspend fun startPassiveMonitoring() {
         val config = PassiveListenerConfig.builder()
             .setDataTypes(setOf(DataType.STEPS))
+            .setShouldUserActivityInfoBeRequested(true)
             .build()
         client.setPassiveListenerServiceAsync(StepsPassiveListenerService::class.java, config).await()
     }

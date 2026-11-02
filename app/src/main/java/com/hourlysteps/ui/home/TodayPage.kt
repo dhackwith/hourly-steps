@@ -74,6 +74,8 @@ private fun lastCheckLine(check: CheckRecord): String {
     val time = Instant.ofEpochMilli(check.timeMillis).atZone(ZoneId.systemDefault()).toLocalTime()
     val outcome = when {
         check.skippedReason != null -> "skipped, ${check.skippedReason}"
+        check.notified && check.isFollowUp -> "reminded again"
+        check.isFollowUp -> "on track"
         check.notified -> "reminded"
         else -> "no reminder needed"
     }

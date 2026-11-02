@@ -12,5 +12,14 @@
                 <action android:name="com.hourlysteps.debug.CELEBRATE" />
             </intent-filter>
         </receiver>
+        <!-- Debug builds only: lets adb pretend a workout or sleep is in progress. -->
+        <receiver
+            android:name=".debug.DebugActivityReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="com.hourlysteps.debug.SET_ACTIVITY" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

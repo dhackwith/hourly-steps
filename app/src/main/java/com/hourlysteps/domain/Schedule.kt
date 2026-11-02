@@ -93,6 +93,9 @@ data class Slot(
     fun endAt(zone: ZoneId): ZonedDateTime = at(endMinute, zone)
     fun checkAt(zone: ZoneId): ZonedDateTime = at(checkMinute, zone)
 
+    /** Halfway between the check and the slot's end: :55 of an hourly slot. */
+    fun secondNudgeAt(zone: ZoneId): ZonedDateTime = endAt(zone).minusSeconds(leadMinutes * 30L)
+
     private fun at(minute: Int, zone: ZoneId): ZonedDateTime =
         date.atStartOfDay().plusMinutes(minute.toLong()).atZone(zone)
 }

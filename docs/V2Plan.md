@@ -205,7 +205,7 @@ All three read one `DayStatus`, computed in one place, so they never disagree.
 
 ---
 
-## Phase C — Smarter reminders
+## Phase C — Smarter reminders (done)
 
 ### 5. Skip during workouts and sleep
 
@@ -215,23 +215,30 @@ All three read one `DayStatus`, computed in one place, so they never disagree.
 - At check time: `ASLEEP` → skip ("asleep"); `EXERCISE` → skip ("workout"). Both behind
   settings, default on. A celebration still fires if the slot goal is reached during a workout
   (a walk workout should still celebrate), but not while asleep.
-- Skip-reason precedence: paused > day off > late > asleep > workout > charging.
-- **Limitation to document:** the exercise state is set only while an app tracks a workout
-  through Health Services (the Fitbit app on Pixel Watch does). Auto-detected activity is not
-  reported. Off-wrist detection stays out; charging covers the common case.
-- Emulator: `whs.synthetic.user.START_SLEEPING` / `STOP_SLEEPING` broadcasts exist on the
-  Wear OS 6 image; exercise state can be driven by starting a workout in the Fitbit or a
-  sample exercise app.
+- Skip-reason precedence: paused > day off > outside window > late > asleep > workout > charging.
+- A missed "stopped" message must not silence reminders for good, so a workout older than 12
+  hours or a sleep older than 18 hours counts as unknown.
+- **Limitation:** the exercise state is set only while an app tracks a workout through Health
+  Services. Auto-detected activity is not reported. Off-wrist detection stays out; charging covers
+  the common case.
+- Emulator: `whs.synthetic.user.START_SLEEPING` / `STOP_SLEEPING` broadcasts drive the real sleep
+  path. No exercise app is on the emulator, so debug builds accept
+  `com.hourlysteps.debug.SET_ACTIVITY` to pretend a workout is running. Clock jumps make the app
+  re-register, which re-delivers the true state, so set it after any jump.
 
 ### 6. Snooze and a second nudge
 
 - **Second nudge** (setting, default off): after a shortfall at `slotEnd − lead`, arm a
   follow-up at `slotEnd − lead/2` (:55 for hourly slots). It re-reads steps; still short →
-  vibrate again and update the notification text; met → cancel. Uses `setAlarmClock` so it is
-  not subject to Doze's nine-minute spacing for exact alarms. Never fires after the slot ends.
+  vibrate again and update the notification text; met → clear it. Never reminds after the slot
+  ends. Uses an ordinary exact alarm, not `setAlarmClock`, which can appear as the watch's "next
+  alarm" on watch faces. With the exact-alarm permission it fired on time in forced deep Doze on
+  the emulator. Without that permission it may run late, and is skipped if the slot has ended.
 - **Notification actions:** "Snooze 5 min" (same follow-up mechanism, manual) and
-  "Pause today". Wear OS shows actions under the notification body.
-- **Check log** records nudge outcomes so the Today page can show "reminded twice".
+  "Pause today". Wear OS shows actions under the notification body. A snooze that would end after
+  the slot just clears the reminder.
+- **Check log** records follow-ups separately, so they don't change a slot's result. The Today
+  page's last check line says "reminded again" or "on track".
 
 **Tests.** Follow-up time per slot length; no follow-up when the first check was skipped or met;
 snooze never crosses the slot end; nudge cancelled when the goal is met in between.

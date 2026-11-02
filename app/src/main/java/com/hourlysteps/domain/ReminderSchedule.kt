@@ -34,4 +34,10 @@ object ReminderSchedule {
      * already over, so the check should be skipped.
      */
     fun isLate(slot: Slot, now: ZonedDateTime): Boolean = !now.isBefore(slot.endAt(now.zone))
+
+    /** When a snoozed reminder should come back, or null if the slot would be over by then. */
+    fun snoozeUntil(slot: Slot, now: ZonedDateTime): ZonedDateTime? =
+        now.plusMinutes(SNOOZE_MINUTES).takeIf { it.isBefore(slot.endAt(now.zone)) }
+
+    const val SNOOZE_MINUTES = 5L
 }

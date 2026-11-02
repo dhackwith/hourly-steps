@@ -13,6 +13,10 @@ data class Settings(
     val inactivityThreshold: Int = DEFAULT_INACTIVITY_THRESHOLD,
     val vibration: VibrationStrength = VibrationStrength.SHORT,
     val skipWhileCharging: Boolean = true,
+    val skipDuringWorkouts: Boolean = true,
+    val skipWhileAsleep: Boolean = true,
+    /** Buzz once more shortly before the slot ends if still short. */
+    val secondNudge: Boolean = false,
     /** Vibrate and show a celebration when this slot's goal is reached. */
     val celebrate: Boolean = true,
 ) {

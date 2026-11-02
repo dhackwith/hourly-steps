@@ -19,6 +19,9 @@ when you are short of an hourly step goal derived from your daily goal.
 - See your progress without opening the app: a **tile** with two rings (today outside, this hour
   inside), watch-face **complications** for this hour and for today, and a **Today** page (swipe
   left on Home) showing each hour's result and why a reminder did or didn't fire.
+- Reminders stay out of the way: they skip during tracked workouts and sleep, have **Snooze 5 min**
+  and **Pause today** buttons, and can optionally buzz once more near the end of the hour with
+  **Second nudge**. A skipped reminder is explained on the Today page.
 
 Design: [docs/HourlyStepsPlan.md](docs/HourlyStepsPlan.md). Planned v2 features: [docs/V2Plan.md](docs/V2Plan.md).
 
@@ -59,6 +62,22 @@ watch on its face or asleep, debug builds also accept:
 
 ```bash
 adb shell am broadcast -a com.hourlysteps.debug.CELEBRATE -p com.hourlysteps
+```
+
+Sleep comes from Health Services' synthetic events. No workout app is on the emulator, so debug
+builds can pretend one is running. Clock jumps make the app re-register, which re-delivers the true
+state, so set this after any jump:
+
+```bash
+adb shell am broadcast -a whs.synthetic.user.START_SLEEPING com.google.android.wearable.healthservices
+```
+
+```bash
+adb shell am broadcast -a whs.synthetic.user.STOP_SLEEPING com.google.android.wearable.healthservices
+```
+
+```bash
+adb shell am broadcast -a com.hourlysteps.debug.SET_ACTIVITY --es state EXERCISE -p com.hourlysteps
 ```
 
 Useful adb commands while testing:

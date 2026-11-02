@@ -25,6 +25,14 @@ class SettingsCodecTest {
     }
 
     @Test
+    fun `new reminder settings default sensibly`() {
+        val defaults = SettingsCodec.read(mutablePreferencesOf())
+        assertEquals(true, defaults.skipDuringWorkouts)
+        assertEquals(true, defaults.skipWhileAsleep)
+        assertEquals(false, defaults.secondNudge)
+    }
+
+    @Test
     fun `empty preferences read as defaults`() {
         assertEquals(Settings(), SettingsCodec.read(mutablePreferencesOf()))
     }
@@ -82,6 +90,9 @@ class SettingsCodecTest {
             vibration = VibrationStrength.LONG,
             skipWhileCharging = false,
             celebrate = false,
+            skipDuringWorkouts = false,
+            skipWhileAsleep = false,
+            secondNudge = true,
         )
         assertEquals(settings, roundTrip(settings))
     }

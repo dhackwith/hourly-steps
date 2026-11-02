@@ -95,6 +95,8 @@ class ReminderNotifier(
             .setAutoCancel(true)
             .setTimeoutAfter(timeout)
             .setContentIntent(contentIntent)
+            .addAction(R.drawable.ic_action_snooze, context.getString(R.string.notif_action_snooze), actionIntent(ReminderReceiver.ACTION_SNOOZE, 10))
+            .addAction(R.drawable.ic_action_pause, context.getString(R.string.notif_action_pause_today), actionIntent(ReminderReceiver.ACTION_PAUSE_TODAY, 11))
         if (subText != null) {
             builder.setStyle(NotificationCompat.BigTextStyle().bigText("$text\n$subText"))
         }
@@ -103,6 +105,14 @@ class ReminderNotifier(
         notificationManager.notify(NOTIFICATION_ID, builder.build())
         Haptics.vibrate(context, Haptics.reminderPattern(settings.vibration))
     }
+
+    private fun actionIntent(action: String, requestCode: Int): PendingIntent =
+        PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            Intent(context, ReminderReceiver::class.java).setAction(action),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
 
     private fun moreStepsText(need: Int): String =
         context.resources.getQuantityString(R.plurals.notif_more_steps, need, formatSteps(need))

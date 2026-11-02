@@ -11,11 +11,13 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import com.hourlysteps.R
 import com.hourlysteps.data.settings.SettingsRepository
+import com.hourlysteps.data.steps.ActivityStore
 import com.hourlysteps.data.steps.StepsRepository
 import com.hourlysteps.domain.Celebration
 import com.hourlysteps.domain.CelebrationDecider
 import com.hourlysteps.domain.CelebrationKind
 import com.hourlysteps.domain.Slots
+import com.hourlysteps.domain.UserActivity
 import com.hourlysteps.domain.VibrationStrength
 import com.hourlysteps.reminder.Attention
 import com.hourlysteps.reminder.Haptics
@@ -40,6 +42,7 @@ class CelebrationManager(
     private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val stepsRepository: StepsRepository,
+    private val activityStore: ActivityStore,
     private val reminderNotifier: ReminderNotifier,
     private val clock: Clock,
     private val isUiVisible: () -> Boolean,
@@ -55,6 +58,8 @@ class CelebrationManager(
         val date = now.toLocalDate()
         val settings = settingsRepository.current()
         if (settings.isPaused(date)) return
+        // Celebrate during a workout, but never wake someone up to do it.
+        if (settings.skipWhileAsleep && activityStore.currentAt(now.toInstant().toEpochMilli()) == UserActivity.ASLEEP) return
         val plan = settings.schedule.planFor(date.dayOfWeek) ?: return
         val slot = Slots.at(settings.schedule, now) ?: return
 
