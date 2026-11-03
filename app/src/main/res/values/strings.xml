@@ -15,11 +15,13 @@
     <string name="celebration_inactivity_title">🎉 Still moving, nice work!</string>
     <string name="celebration_steps_in_slot">%1$s steps %2$s</string>
     <string name="celebration_daily_title">🏆 Daily goal achieved!</string>
+    <string name="celebration_stretch_title">🏆 %1$s achieved!</string>
     <string name="celebration_steps_today">%1$s steps today</string>
 
     <string name="complication_slot_label">Hourly Steps: this interval</string>
     <string name="complication_today_label">Hourly Steps: today</string>
     <string name="complication_reminder_count_label">Hourly Steps: reminders today</string>
+    <string name="complication_stretch_label">Hourly Steps: stretch goals</string>
 
     <string name="notif_title">Time to move</string>
     <string name="notif_action_see_pace">See pace</string>

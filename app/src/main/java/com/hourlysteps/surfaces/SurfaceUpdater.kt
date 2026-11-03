@@ -35,6 +35,7 @@ class SurfaceUpdater(private val context: Context) : SurfaceRefresher {
                 SlotComplicationService::class.java,
                 TodayComplicationService::class.java,
                 ReminderCountComplicationService::class.java,
+                StretchComplicationService::class.java,
             ).forEach {
                 ComplicationDataSourceUpdateRequester.create(context, ComponentName(context, it)).requestUpdateAll()
             }

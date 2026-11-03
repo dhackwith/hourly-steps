@@ -36,6 +36,7 @@ import com.hourlysteps.domain.CelebrationKind
 import com.hourlysteps.domain.Settings
 import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.domain.Streaks
+import com.hourlysteps.domain.StretchGoals
 import com.hourlysteps.reminder.Haptics
 import com.hourlysteps.ui.HourlyStepsTheme
 import com.hourlysteps.ui.LocalAppTheme
@@ -86,6 +87,8 @@ class CelebrationActivity : ComponentActivity() {
         private const val EXTRA_DAILY_GOAL = "daily_goal"
         private const val EXTRA_STREAK = "streak"
         private const val EXTRA_SLOT_MINUTES = "slot_minutes"
+        private const val EXTRA_STRETCH_LEVEL = "stretch_level"
+        private const val EXTRA_STRETCH_COUNT = "stretch_count"
         private const val EXTRA_VIBRATION = "vibration"
 
         fun intent(context: Context, c: Celebration, vibration: LongArray? = null): Intent =
@@ -98,6 +101,8 @@ class CelebrationActivity : ComponentActivity() {
                 .putExtra(EXTRA_DAILY_GOAL, c.dailyGoal)
                 .putExtra(EXTRA_STREAK, c.streak)
                 .putExtra(EXTRA_SLOT_MINUTES, c.slotMinutes)
+                .putExtra(EXTRA_STRETCH_LEVEL, c.stretchLevel)
+                .putExtra(EXTRA_STRETCH_COUNT, c.stretchCount)
 
         private fun celebrationFrom(intent: Intent) = Celebration(
             kind = intent.getStringExtra(EXTRA_KIND)
@@ -109,6 +114,8 @@ class CelebrationActivity : ComponentActivity() {
             dailyGoal = intent.getIntExtra(EXTRA_DAILY_GOAL, 0),
             streak = intent.getIntExtra(EXTRA_STREAK, 0),
             slotMinutes = intent.getIntExtra(EXTRA_SLOT_MINUTES, Settings.DEFAULT_SLOT_MINUTES),
+            stretchLevel = intent.getIntExtra(EXTRA_STRETCH_LEVEL, 0),
+            stretchCount = intent.getIntExtra(EXTRA_STRETCH_COUNT, 0),
         )
     }
 }
@@ -119,7 +126,7 @@ private const val VIBRATE_AFTER_MS = 400L
 @Composable
 fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    val isDaily = celebration.kind == CelebrationKind.DAILY_GOAL
+    val isDaily = celebration.kind == CelebrationKind.DAILY_GOAL || celebration.kind == CelebrationKind.STRETCH_GOAL
     val theme = LocalAppTheme.current
     val gold = Color(theme.goalMet)
     val scale = remember { Animatable(if (reduceMotion) 1f else 0.4f) }
@@ -164,6 +171,7 @@ fun CelebrationScreen(celebration: Celebration, reduceMotion: Boolean, onDone: (
                 CelebrationKind.SLOT_GOAL -> SlotWording.goalName(celebration.slotMinutes) to "achieved!"
                 CelebrationKind.INACTIVITY_GOAL -> "Still moving" to "nice work!"
                 CelebrationKind.DAILY_GOAL -> "Daily goal" to "achieved!"
+                CelebrationKind.STRETCH_GOAL -> StretchGoals.name(celebration.stretchLevel, celebration.stretchCount) to "achieved!"
             }
             Text(if (isDaily) "🏆" else "🎉", fontSize = 30.sp)
             Text(headline1, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)

@@ -8,8 +8,11 @@ interface CelebrationMemory {
     fun lastSlot(): String?
     fun lastDay(): String?
 
+    /** The last stretch goal celebrated, as "date#level". */
+    fun lastStretch(): String?
+
     /** Saves whichever are given, together. */
-    fun remember(slot: String? = null, day: String? = null)
+    fun remember(slot: String? = null, day: String? = null, stretch: String? = null)
 }
 
 /** How a celebration reaches the wearer. */

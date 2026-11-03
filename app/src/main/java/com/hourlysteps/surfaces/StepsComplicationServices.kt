@@ -74,3 +74,9 @@ class ReminderCountComplicationService : StepsComplicationService() {
     override fun content(status: DayStatus) = reminderCountComplication(status)
     override val previewContent = ComplicationContent(12f, 12f, "12", "reminders", "12 reminders today")
 }
+
+/** Today's total at each stretch goal. */
+class StretchComplicationService : StepsComplicationService() {
+    override fun content(status: DayStatus) = stretchComplication(status)
+    override val previewContent = ComplicationContent(10000f, 13000f, "13,000", "stretch", "Stretch goals to 13,000 today", min = 10000f)
+}

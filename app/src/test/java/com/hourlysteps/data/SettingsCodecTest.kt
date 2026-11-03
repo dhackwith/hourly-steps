@@ -35,6 +35,19 @@ class SettingsCodecTest {
     }
 
     @Test
+    fun `stretch goals are off by default and survive saving`() {
+        assertEquals(emptyList<Int>(), SettingsCodec.read(mutablePreferencesOf()).stretchGoals)
+        assertEquals(listOf(3000, 1500), roundTrip(Settings(stretchGoals = listOf(3000, 1500))).stretchGoals)
+        assertEquals(emptyList<Int>(), roundTrip(Settings(stretchGoals = emptyList())).stretchGoals)
+    }
+
+    @Test
+    fun `stretch goals that can't be right are dropped when read`() {
+        val prefs = mutablePreferencesOf(stringPreferencesKey("stretch_goals") to "3000,x,50,20000,1000,2000,500")
+        assertEquals(listOf(3000, 1000, 2000), SettingsCodec.read(prefs).stretchGoals)
+    }
+
+    @Test
     fun `empty preferences read as defaults`() {
         assertEquals(Settings(), SettingsCodec.read(mutablePreferencesOf()))
     }

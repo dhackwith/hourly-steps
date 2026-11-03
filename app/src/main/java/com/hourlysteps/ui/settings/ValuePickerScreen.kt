@@ -31,7 +31,20 @@ import com.hourlysteps.ui.formatSlotGoal
 import com.hourlysteps.ui.formatSteps
 import kotlinx.coroutines.launch
 
-enum class PickerTarget { DAILY_GOAL, FIRST_HOUR, LAST_HOUR, INACTIVITY_THRESHOLD }
+enum class PickerTarget {
+    DAILY_GOAL,
+    FIRST_HOUR,
+    LAST_HOUR,
+    INACTIVITY_THRESHOLD,
+    STRETCH_GOAL_1,
+    STRETCH_GOAL_2,
+    STRETCH_GOAL_3,
+    ;
+
+    companion object {
+        fun stretchGoal(index: Int): PickerTarget = listOf(STRETCH_GOAL_1, STRETCH_GOAL_2, STRETCH_GOAL_3)[index]
+    }
+}
 
 /** Options, labels, and the setter for one picker target. */
 private data class PickerSpec(
@@ -92,7 +105,19 @@ private fun specFor(target: PickerTarget, planId: PlanId): PickerSpec = when (ta
         apply = { s, v -> s.copy(inactivityThreshold = v) },
         caption = { _, _ -> "steps per hour" },
     )
+    PickerTarget.STRETCH_GOAL_1 -> stretchGoalSpec(0)
+    PickerTarget.STRETCH_GOAL_2 -> stretchGoalSpec(1)
+    PickerTarget.STRETCH_GOAL_3 -> stretchGoalSpec(2)
 }
+
+private fun stretchGoalSpec(index: Int) = PickerSpec(
+    title = "Stretch goal",
+    values = (Settings.MIN_STRETCH_GOAL..Settings.MAX_STRETCH_GOAL step Settings.STRETCH_GOAL_STEP).toList(),
+    label = { _, v -> formatSteps(v) },
+    current = { it.stretchGoals.getOrElse(index) { Settings.DEFAULT_STRETCH_GOAL } },
+    apply = { s, v -> s.copy(stretchGoals = s.stretchGoals.mapIndexed { i, goal -> if (i == index) v else goal }) },
+    caption = { _, _ -> "more steps" },
+)
 
 private fun slotsCaption(s: Settings, planId: PlanId): String {
     return formatPickerCaption(s.schedule.plan(planId), s.schedule.slotMinutes)

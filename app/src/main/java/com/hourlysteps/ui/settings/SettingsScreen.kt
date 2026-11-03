@@ -38,6 +38,7 @@ fun SettingsScreen(
     onOpenWeek: () -> Unit,
     onOpenPause: () -> Unit,
     onOpenTheme: () -> Unit,
+    onOpenStretchGoals: () -> Unit,
     onPickInactivity: () -> Unit,
     onOpenPermissions: () -> Unit,
 ) {
@@ -121,6 +122,17 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Reminder interval") },
                     secondaryLabel = { Text(SlotWording.interval(schedule.slotMinutes)) },
+                )
+            }
+
+            item {
+                FilledTonalButton(
+                    onClick = onOpenStretchGoals,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Stretch goals") },
+                    secondaryLabel = {
+                        Text(settings.stretchGoals.takeIf { it.isNotEmpty() }?.joinToString(" + ") { formatSteps(it) } ?: "Off")
+                    },
                 )
             }
 

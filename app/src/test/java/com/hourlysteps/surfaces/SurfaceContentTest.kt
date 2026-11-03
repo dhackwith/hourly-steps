@@ -1,5 +1,6 @@
 package com.hourlysteps.surfaces
 
+import com.hourlysteps.domain.AppTheme
 import com.hourlysteps.domain.CheckMode
 import com.hourlysteps.domain.DayAssignment
 import com.hourlysteps.domain.DayStatus
@@ -30,6 +31,102 @@ class SurfaceContentTest {
 
     private fun status(hour: Int = 10, inSlot: Int = 292, total: Int = 3500, s: Settings = settings) =
         DayStatus.compute(at(hour), s, inSlot, total)
+
+    private val stretchy = settings.copy(stretchGoals = listOf(3000, 1500))
+
+    @Test
+    fun `stretch goals wait for the daily goal`() {
+        val content = ringContent(status(hour = 21, inSlot = 0, total = 6999, s = stretchy))
+        assertEquals(0, content.stretchLevel)
+        assertEquals("of 7,000 today", content.valueCaption)
+    }
+
+    @Test
+    fun `past the daily goal the ring runs a lap towards the first stretch goal`() {
+        val content = ringContent(status(hour = 21, inSlot = 0, total = 8500, s = stretchy))
+        assertEquals(1, content.stretchLevel)
+        assertEquals(0.5f, content.stretchProgress, 0.001f)
+        assertEquals("Stretch 1 of 2", content.title)
+        assertEquals("8,500", content.value)
+        assertEquals("of 10,000 today", content.valueCaption)
+    }
+
+    @Test
+    fun `the next stretch goal starts its own lap`() {
+        val content = ringContent(status(hour = 21, inSlot = 0, total = 10000, s = stretchy))
+        assertEquals(2, content.stretchLevel)
+        assertEquals(0f, content.stretchProgress, 0.001f)
+        assertEquals("of 11,500 today", content.valueCaption)
+    }
+
+    @Test
+    fun `with every stretch goal reached the last lap stays full`() {
+        val content = ringContent(status(hour = 21, inSlot = 0, total = 12000, s = stretchy))
+        assertEquals(2, content.stretchLevel)
+        assertEquals(1f, content.stretchProgress, 0.001f)
+        assertEquals("Stretch goals met", content.title)
+        assertEquals("today", content.valueCaption)
+    }
+
+    @Test
+    fun `one stretch goal has a simpler name`() {
+        val one = settings.copy(stretchGoals = listOf(3000))
+        assertEquals("Stretch goal", ringContent(status(hour = 21, inSlot = 0, total = 8000, s = one)).title)
+        assertEquals("Stretch goal met", ringContent(status(hour = 21, inSlot = 0, total = 10000, s = one)).title)
+    }
+
+    @Test
+    fun `during inactivity checks the rings still show the hour, with the stretch goal's total`() {
+        val s = stretchy.copy(inactivityEnabled = true)
+        val content = ringContent(status(hour = 10, inSlot = 100, total = 8500, s = s))
+        assertEquals("100", content.value)
+        assertEquals("of 250 this hour", content.valueCaption)
+        assertEquals("Stretch 1 of 2", content.title)
+        assertEquals("Today 8,500 / 10,000", content.todayLine)
+    }
+
+    @Test
+    fun `a paused day shows no stretch goal`() {
+        val paused = stretchy.copy(pausedThrough = day)
+        val st = status(hour = 21, inSlot = 0, total = 8000, s = paused)
+        assertEquals(0, ringContent(st).stretchLevel)
+        assertEquals("Off", stretchComplication(st).shortText)
+    }
+
+    @Test
+    fun `each stretch goal's lap is hotter than the one beneath it`() {
+        val content = ringContent(status(hour = 21, inSlot = 0, total = 10500, s = stretchy))
+        val theme = AppTheme.VIOLET
+        assertEquals(theme.stretch(1), content.lapBaseColor(theme))
+        assertEquals(theme.stretch(2), content.outerColor(theme))
+        val green = { color: Long -> (color shr 8) and 0xFF }
+        assertEquals(theme.goalMet, theme.stretch(0))
+        assertTrue(green(theme.stretch(0)) > green(theme.stretch(1)))
+        assertTrue(green(theme.stretch(1)) > green(theme.stretch(2)))
+        assertTrue(green(theme.stretch(2)) > green(theme.stretch(3)))
+    }
+
+    @Test
+    fun `the stretch complication carries each goal's total, in order`() {
+        val three = settings.copy(stretchGoals = listOf(3000, 1500, 500))
+        val content = stretchComplication(status(s = three))
+        assertEquals(10000f, content.min, 0f)
+        assertEquals(11500f, content.value, 0f)
+        assertEquals(12000f, content.max, 0f)
+    }
+
+    @Test
+    fun `the stretch complication repeats the last goal when fewer are set`() {
+        val content = stretchComplication(status(s = settings.copy(stretchGoals = listOf(3000))))
+        assertEquals(10000f, content.min, 0f)
+        assertEquals(10000f, content.value, 0f)
+        assertEquals(10000f, content.max, 0f)
+    }
+
+    @Test
+    fun `the stretch complication is off without stretch goals`() {
+        assertEquals("Off", stretchComplication(status()).shortText)
+    }
 
     @Test
     fun `active status tracks the slot and the day`() {

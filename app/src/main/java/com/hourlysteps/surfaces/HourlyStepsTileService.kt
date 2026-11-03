@@ -72,13 +72,19 @@ class HourlyStepsTileService : TileService() {
             .setId("open_app")
             .setOnClick(ActionBuilders.launchAction(ComponentName(this, MainActivity::class.java)))
             .build()
-        val outerColor = if (content.goalMet) theme.goalMet else theme.today
+        val outerColor = content.outerColor(theme)
 
         return Box.Builder()
             .setWidth(expand())
             .setHeight(expand())
             .setModifiers(ModifiersBuilders.Modifiers.Builder().setClickable(open).build())
-            .addContent(ring(content.todayProgress, outerColor, theme.track, OUTER_THICKNESS_DP))
+            .addContent(
+                if (content.stretchLevel > 0) {
+                    ring(content.stretchProgress, outerColor, content.lapBaseColor(theme), OUTER_THICKNESS_DP)
+                } else {
+                    ring(content.todayProgress, outerColor, theme.track, OUTER_THICKNESS_DP)
+                },
+            )
             .addContent(
                 Box.Builder()
                     .setWidth(expand())

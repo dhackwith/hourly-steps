@@ -14,7 +14,7 @@ import java.time.ZonedDateTime
 
 private const val TAG = "GoalWatcher"
 
-/** Notices the moment a slot's goal or the daily goal is reached, so it's celebrated once. */
+/** Notices the moment a slot's goal, the daily goal or a stretch goal is reached, so it's celebrated once. */
 class GoalWatcher(
     private val presenter: CelebrationPresenter,
     private val memory: CelebrationMemory,
@@ -61,11 +61,25 @@ class GoalWatcher(
             alreadyCelebratedToday = memory.lastDay() == date.toString(),
         )
 
-        // When both goals fall in the same batch, the daily moment is the one to show.
+        val stretchesCelebrated = memory.lastStretch()
+            ?.takeIf { it.startsWith("$date#") }
+            ?.substringAfter('#')?.toIntOrNull() ?: 0
+        val stretch = CelebrationDecider.decideStretch(
+            settings = settings,
+            plan = plan,
+            stepsInSlot = inSlot,
+            todayTotal = total,
+            alreadyCelebrated = stretchesCelebrated,
+        )
+
+        // When several goals fall in the same batch, the biggest moment is the one to show.
         if (daily != null) {
             memory.remember(slot = if (hourly != null) slotKey else null, day = date.toString())
             streakTracker.finalizePastDays()
             presenter.celebrate(daily.copy(streak = streakTracker.current().current))
+        } else if (stretch != null) {
+            memory.remember(slot = if (hourly != null) slotKey else null, stretch = "$date#${stretch.stretchLevel}")
+            presenter.celebrate(stretch)
         } else if (hourly != null) {
             memory.remember(slot = slotKey)
             presenter.celebrate(hourly)
@@ -79,6 +93,7 @@ class GoalWatcher(
             todayTotal = total,
             alreadyCelebratedThisSlot = memory.lastSlot() == slotKey,
             alreadyCelebratedToday = memory.lastDay() == date.toString(),
+            stretchesCelebrated = stretch?.stretchLevel ?: stretchesCelebrated,
         )
         if (hadNewSteps && left != null && left <= CelebrationDecider.CLOSE_STEPS) {
             Log.i(TAG, "$left steps from a goal; asking for steps again soon")

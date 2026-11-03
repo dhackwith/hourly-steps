@@ -9,6 +9,9 @@ enum class CelebrationKind {
 
     /** Today's total reached the daily goal. */
     DAILY_GOAL,
+
+    /** Today's total reached a stretch goal, past the daily goal. */
+    STRETCH_GOAL,
 }
 
 data class Celebration(
@@ -21,6 +24,9 @@ data class Celebration(
     val streak: Int = 0,
     /** Length of the slot being celebrated, for its wording. */
     val slotMinutes: Int = Settings.DEFAULT_SLOT_MINUTES,
+    /** Which stretch goal this is, from 1, and how many are set; only set for a stretch goal. */
+    val stretchLevel: Int = 0,
+    val stretchCount: Int = 0,
 )
 
 object CelebrationDecider {
@@ -61,6 +67,31 @@ object CelebrationDecider {
         return Celebration(CelebrationKind.DAILY_GOAL, stepsInSlot, plan.dailyGoal, todayTotal, plan.dailyGoal)
     }
 
+    /**
+     * The highest stretch goal reached and not yet celebrated. A stretch goal is the same kind of
+     * moment as the daily goal, so it follows the same setting.
+     */
+    fun decideStretch(
+        settings: Settings,
+        plan: DayPlan,
+        stepsInSlot: Int,
+        todayTotal: Int,
+        alreadyCelebrated: Int,
+    ): Celebration? {
+        if (!settings.celebrateDaily) return null
+        val reached = StretchGoals.reachedCount(plan.dailyGoal, settings.stretchGoals, todayTotal)
+        if (reached <= alreadyCelebrated) return null
+        return Celebration(
+            kind = CelebrationKind.STRETCH_GOAL,
+            stepsInSlot = stepsInSlot,
+            target = StretchGoals.targets(plan.dailyGoal, settings.stretchGoals)[reached - 1],
+            todayTotal = todayTotal,
+            dailyGoal = plan.dailyGoal,
+            stretchLevel = reached,
+            stretchCount = settings.stretchGoals.size,
+        )
+    }
+
     /** Steps until the next celebration, or null when none is still to come. */
     fun stepsToNext(
         settings: Settings,
@@ -70,12 +101,16 @@ object CelebrationDecider {
         todayTotal: Int,
         alreadyCelebratedThisSlot: Boolean,
         alreadyCelebratedToday: Boolean,
+        stretchesCelebrated: Int = 0,
     ): Int? {
         val toSlot = slot?.takeIf { settings.celebrate && !alreadyCelebratedThisSlot }
             ?.let { slotTarget(settings, plan, it, stepsInSlot, todayTotal) }
             ?.let { (_, target) -> target - stepsInSlot }
         val toDay = (plan.dailyGoal - todayTotal).takeIf { settings.celebrateDaily && !alreadyCelebratedToday }
-        return listOfNotNull(toSlot, toDay).filter { it > 0 }.minOrNull()
+        val toStretch = StretchGoals.targets(plan.dailyGoal, settings.stretchGoals).getOrNull(stretchesCelebrated)
+            ?.takeIf { settings.celebrateDaily }
+            ?.let { it - todayTotal }
+        return listOfNotNull(toSlot, toDay, toStretch).filter { it > 0 }.minOrNull()
     }
 
     private fun slotTarget(settings: Settings, plan: DayPlan, slot: Slot, stepsInSlot: Int, todayTotal: Int): Pair<CelebrationKind, Int>? {

@@ -56,6 +56,74 @@ class GoalWatcherTest {
 
     private val hourGoal = Celebration(CelebrationKind.SLOT_GOAL, 600, 584, 1768, 7000)
 
+    // --- Stretch goals
+
+    private fun stretchGoals(vararg goals: Int) {
+        settings.settings = Settings(stretchGoals = goals.toList())
+    }
+
+    @Test
+    fun `reaching a stretch goal celebrates it once`() = runTest {
+        stretchGoals(3000, 1500)
+        memory.remember(day = day.toString())
+        steps.inSlot = 0
+        steps.total = 10000
+        manager().onStepsRecorded()
+        manager().onStepsRecorded()
+        assertEquals(1, surface.celebrations.size)
+        val celebration = surface.celebrations.single()
+        assertEquals(CelebrationKind.STRETCH_GOAL, celebration.kind)
+        assertEquals(1, celebration.stretchLevel)
+        assertEquals(2, celebration.stretchCount)
+        assertEquals(10000, celebration.target)
+    }
+
+    @Test
+    fun `each stretch goal gets its own celebration`() = runTest {
+        stretchGoals(3000, 1500)
+        memory.remember(day = day.toString())
+        steps.total = 10000
+        manager().onStepsRecorded()
+        steps.total = 11500
+        manager().onStepsRecorded()
+        assertEquals(listOf(1, 2), surface.celebrations.map { it.stretchLevel })
+    }
+
+    @Test
+    fun `yesterday's stretch goals don't count against today`() = runTest {
+        stretchGoals(3000)
+        memory.remember(day = day.toString(), stretch = "2026-06-09#1")
+        steps.total = 10000
+        manager().onStepsRecorded()
+        assertEquals(1, surface.celebrations.size)
+    }
+
+    @Test
+    fun `the daily goal comes first when a batch reaches both`() = runTest {
+        stretchGoals(500)
+        steps.total = 7600
+        manager().onStepsRecorded()
+        manager().onStepsRecorded()
+        assertEquals(listOf(CelebrationKind.DAILY_GOAL, CelebrationKind.STRETCH_GOAL), surface.celebrations.map { it.kind })
+    }
+
+    @Test
+    fun `stretch goals follow the daily celebration setting`() = runTest {
+        settings.settings = Settings(stretchGoals = listOf(3000), celebrateDaily = false)
+        steps.total = 10000
+        manager().onStepsRecorded()
+        assertTrue(surface.celebrations.isEmpty())
+    }
+
+    @Test
+    fun `close to a stretch goal it asks for steps again soon`() = runTest {
+        stretchGoals(3000)
+        memory.remember(day = day.toString())
+        steps.total = 9700
+        manager().onStepsRecorded()
+        assertTrue(events.has("step check"))
+    }
+
     // --- Noticing a goal
 
     @Test

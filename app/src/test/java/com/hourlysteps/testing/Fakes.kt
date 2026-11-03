@@ -140,13 +140,19 @@ class FakeCheckLog(private val events: Events) : CheckLogDao() {
     override suspend fun pruneBefore(beforeDate: String) = events.add("prune log $beforeDate")
 }
 
-class FakeMemory(private var slot: String? = null, private var day: String? = null) : CelebrationMemory {
+class FakeMemory(
+    private var slot: String? = null,
+    private var day: String? = null,
+    private var stretch: String? = null,
+) : CelebrationMemory {
     override fun lastSlot() = slot
     override fun lastDay() = day
+    override fun lastStretch() = stretch
 
-    override fun remember(slot: String?, day: String?) {
+    override fun remember(slot: String?, day: String?, stretch: String?) {
         slot?.let { this.slot = it }
         day?.let { this.day = it }
+        stretch?.let { this.stretch = it }
     }
 }
 

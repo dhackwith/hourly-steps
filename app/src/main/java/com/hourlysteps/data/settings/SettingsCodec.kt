@@ -49,6 +49,7 @@ object SettingsCodec {
         val SKIP_ASLEEP = booleanPreferencesKey("skip_while_asleep")
         val SECOND_NUDGE = booleanPreferencesKey("second_nudge")
         val THEME = stringPreferencesKey("theme")
+        val STRETCH_GOALS = stringPreferencesKey("stretch_goals")
     }
 
     fun read(prefs: Preferences): Settings {
@@ -94,6 +95,7 @@ object SettingsCodec {
             theme = prefs[Keys.THEME]
                 ?.let { runCatching { AppTheme.valueOf(it) }.getOrNull() }
                 ?: defaults.theme,
+            stretchGoals = decodeStretchGoals(prefs[Keys.STRETCH_GOALS]),
         )
     }
 
@@ -128,7 +130,14 @@ object SettingsCodec {
         prefs[Keys.SKIP_ASLEEP] = s.skipWhileAsleep
         prefs[Keys.SECOND_NUDGE] = s.secondNudge
         prefs[Keys.THEME] = s.theme.name
+        prefs[Keys.STRETCH_GOALS] = s.stretchGoals.joinToString(",")
     }
+
+    private fun decodeStretchGoals(encoded: String?): List<Int> =
+        encoded.orEmpty().split(",")
+            .mapNotNull { it.toIntOrNull() }
+            .filter { it in Settings.MIN_STRETCH_GOAL..Settings.MAX_STRETCH_GOAL }
+            .take(Settings.MAX_STRETCH_GOALS)
 
     /** Seven characters, Monday first: A, B or O. */
     private fun encodeWeek(assignments: Map<DayOfWeek, DayAssignment>): String =

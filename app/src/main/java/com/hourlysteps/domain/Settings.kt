@@ -21,6 +21,8 @@ data class Settings(
     val celebrate: Boolean = true,
     val celebrateDaily: Boolean = true,
     val theme: AppTheme = AppTheme.DEFAULT,
+    /** Steps to walk past the daily goal, each on top of the one before. Empty when off. */
+    val stretchGoals: List<Int> = emptyList(),
 ) {
     fun isPaused(date: LocalDate): Boolean = pausedThrough != null && !date.isAfter(pausedThrough)
 
@@ -38,6 +40,12 @@ data class Settings(
         const val MIN_INACTIVITY_THRESHOLD = 50
         const val MAX_INACTIVITY_THRESHOLD = 1000
         const val INACTIVITY_THRESHOLD_STEP = 50
+
+        const val DEFAULT_STRETCH_GOAL = 3000
+        const val MIN_STRETCH_GOAL = 500
+        const val MAX_STRETCH_GOAL = 10000
+        const val STRETCH_GOAL_STEP = 500
+        const val MAX_STRETCH_GOALS = 3
 
         val SLOT_MINUTE_OPTIONS = listOf(30, 60, 120)
         val PAUSED_UNTIL_RESUMED: LocalDate = LocalDate.MAX

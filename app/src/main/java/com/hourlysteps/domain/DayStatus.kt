@@ -31,6 +31,10 @@ data class DayStatus(
     val paceTarget: Int?,
     val nextCheck: ZonedDateTime?,
     val pausedThrough: LocalDate?,
+    /** Set once the daily goal is met if stretch goals are on, and not on a paused day. */
+    val stretch: StretchProgress? = null,
+    /** Today's total at each stretch goal. Empty when off, and on a paused day or a day off. */
+    val stretchTargets: List<Int> = emptyList(),
 ) {
     val dailyGoalMet: Boolean get() = dailyGoal != null && todayTotal >= dailyGoal
 
@@ -92,6 +96,11 @@ data class DayStatus(
                 paceTarget = paceTarget,
                 nextCheck = ReminderSchedule.nextCheckTime(now, settings),
                 pausedThrough = settings.pausedThrough,
+                stretch = plan?.takeIf { kind == DayStatusKind.ACTIVE || kind == DayStatusKind.OUTSIDE_WINDOW }
+                    ?.let { StretchGoals.progress(it.dailyGoal, settings.stretchGoals, todayTotal) },
+                stretchTargets = plan?.takeIf { kind != DayStatusKind.PAUSED }
+                    ?.let { StretchGoals.targets(it.dailyGoal, settings.stretchGoals) }
+                    .orEmpty(),
             )
         }
     }

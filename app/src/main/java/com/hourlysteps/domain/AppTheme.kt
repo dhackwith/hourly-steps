@@ -38,6 +38,12 @@ enum class AppTheme(
     val tertiaryContainer: Long get() = mix(goalMet, BLACK, 0.65f)
     val onTertiaryContainer: Long get() = mix(goalMet, WHITE, 0.5f)
 
+    /**
+     * The outer ring's colour on a stretch goal's lap: the goal colour at 0, growing hotter with
+     * each [level] so a lap stands out against the one beneath it.
+     */
+    fun stretch(level: Int): Long = mix(goalMet, STRETCH_PEAK, level.coerceIn(0, 3) / 3f)
+
     val surfaceLow: Long get() = mix(track, BLACK, 0.3f)
     val surfaceHigh: Long get() = mix(track, WHITE, 0.08f)
 
@@ -47,6 +53,7 @@ enum class AppTheme(
         private const val BLACK = 0xFF000000
         private const val WHITE = 0xFFFFFFFF
         private const val DARK_TEXT = 0xFF1C1B1F
+        private const val STRETCH_PEAK = 0xFFFF3D00
 
         /** [amount] of the way from [from] to [to], channel by channel. */
         fun mix(from: Long, to: Long, amount: Float): Long {

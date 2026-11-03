@@ -23,6 +23,11 @@ different rhythm? Reminders can also come every 30 minutes or every 2 hours.
   [Install on the watch](#install-on-the-watch). Without it, or during Do Not Disturb or Bedtime
   mode, you get a "🎉 Hourly goal achieved!" notification instead, and Do Not Disturb and Bedtime
   mode also leave the screen asleep.
+- Optional **Stretch goals** give you more to walk for once the daily goal is met: up to three, each
+  counted on top of the one before (3,000 steps by default), set in Settings. Each is a lap around the
+  outer ring in a hotter colour than the last, with a gold fireworks screen when you reach it, which
+  follows the Daily goal celebration setting. They don't send reminders, and reaching them doesn't
+  change your streak.
 - The tile and complications start each hour's count when the hour starts, even if you aren't walking.
 - The watch hands steps to the app in batches that can be minutes apart. Within 400 steps of a goal the
   app asks for them about once a minute while you keep walking, so the moment lands close to the real

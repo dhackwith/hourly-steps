@@ -1,10 +1,12 @@
 package com.hourlysteps.surfaces
 
+import com.hourlysteps.domain.AppTheme
 import com.hourlysteps.domain.DayStatus
 import com.hourlysteps.domain.CheckMode
 import com.hourlysteps.domain.DayStatusKind
 import com.hourlysteps.domain.Settings
 import com.hourlysteps.domain.SlotWording
+import com.hourlysteps.domain.StretchGoals
 import com.hourlysteps.ui.formatNextCheck
 import com.hourlysteps.ui.formatPaceLine
 import com.hourlysteps.ui.formatPauseEnd
@@ -25,7 +27,20 @@ data class RingContent(
     val todayLine: String?,
     val paceLine: String?,
     val detailLine: String?,
-)
+    /** The stretch goal's lap being walked around the outer ring, from 1, or 0 for none. */
+    val stretchLevel: Int = 0,
+    val stretchProgress: Float = 0f,
+) {
+    /** The outer ring's arc, and the text that goes with it. */
+    fun outerColor(theme: AppTheme): Long = when {
+        stretchLevel > 0 -> theme.stretch(stretchLevel)
+        goalMet -> theme.goalMet
+        else -> theme.today
+    }
+
+    /** What a stretch goal's lap is drawn over: the lap before it, full. */
+    fun lapBaseColor(theme: AppTheme): Long = theme.stretch(stretchLevel - 1)
+}
 
 private val DayStatus.slotLength: Int get() = slot?.lengthMinutes ?: Settings.DEFAULT_SLOT_MINUTES
 
@@ -51,19 +66,37 @@ fun ringContent(status: DayStatus): RingContent {
             detailLine = status.pausedThrough?.let { "until ${formatPauseEnd(it, status.today)}" },
         )
         status.kind == DayStatusKind.DAY_OFF -> base.copy(goalMet = false, title = "Day off")
-        status.finished -> base.copy(title = "Goal met", valueCaption = "today", detailLine = null)
+        status.finished -> status.withStretch(base.copy(title = "Goal met", valueCaption = "today", detailLine = null))
         status.kind == DayStatusKind.OUTSIDE_WINDOW -> base.copy(
             valueCaption = status.dailyGoal?.let { "of ${formatSteps(it)} today" },
         )
-        else -> base.copy(
+        else -> status.withStretch(base.copy(
             title = if (status.dailyGoalMet) "Goal met · stay active" else null,
             value = formatSteps(status.stepsInSlot),
             valueCaption = "of ${formatSteps(status.slotTarget)} ${SlotWording.current(status.slotLength)}",
             captionIsSlot = true,
             todayLine = status.dailyGoal?.let { "Today $total / ${formatSteps(it)}" },
             paceLine = status.paceGap?.let(::formatPaceLine),
-        )
+        ))
     }
+}
+
+/** Past the daily goal, the words and the outer ring follow the stretch goal being walked. */
+private fun DayStatus.withStretch(content: RingContent): RingContent {
+    val stretch = stretch ?: return content
+    val target = formatSteps(stretch.target)
+    val total = formatSteps(todayTotal)
+    return content.copy(
+        title = when {
+            !stretch.allReached -> StretchGoals.name(stretch.level, stretch.count)
+            stretch.count == 1 -> "Stretch goal met"
+            else -> "Stretch goals met"
+        },
+        valueCaption = if (finished && !stretch.allReached) "of $target today" else content.valueCaption,
+        todayLine = content.todayLine?.let { if (stretch.allReached) "Today $total" else "Today $total / $target" },
+        stretchLevel = stretch.level,
+        stretchProgress = stretch.lapProgress,
+    )
 }
 
 /** The Pace check reminder screen. */
@@ -150,6 +183,25 @@ fun reminderCountComplication(status: DayStatus): ComplicationContent {
         shortText = count.toString(),
         shortTitle = if (count == 1) "reminder" else "reminders",
         longText = if (count == 1) "1 reminder today" else "$count reminders today",
+    )
+}
+
+/**
+ * Today's total at each stretch goal, for a watch face to draw their laps from: the first as the
+ * minimum, the second as the value and the third as the maximum. They only ever go up, so they fit
+ * a range, and any not set repeat the last one.
+ */
+fun stretchComplication(status: DayStatus): ComplicationContent {
+    val targets = status.stretchTargets
+    if (targets.isEmpty()) return unavailable("Off")
+    val last = formatSteps(targets.last())
+    return ComplicationContent(
+        min = targets.first().toFloat(),
+        value = targets.getOrElse(1) { targets.last() }.toFloat(),
+        max = targets.last().toFloat(),
+        shortText = last,
+        shortTitle = "stretch",
+        longText = "Stretch goals to $last today",
     )
 }
 

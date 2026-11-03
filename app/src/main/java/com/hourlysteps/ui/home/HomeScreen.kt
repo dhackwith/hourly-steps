@@ -65,11 +65,16 @@ fun HomeContent(status: DayStatus, pagerState: PagerState, onResume: () -> Unit,
     val colors = MaterialTheme.colorScheme
     val content = ringContent(status)
     val theme = LocalAppTheme.current
-    val todayColor = Color(if (content.goalMet) theme.goalMet else theme.today)
+    val todayColor = Color(content.outerColor(theme))
     val slotColor = Color(theme.slot)
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Ring(content.todayProgress, todayColor, Modifier.padding(4.dp))
+        if (content.stretchLevel > 0) {
+            Ring(1f, Color(content.lapBaseColor(theme)), Modifier.padding(4.dp))
+            if (content.stretchProgress > 0f) Ring(content.stretchProgress, todayColor, Modifier.padding(4.dp), Color.Transparent)
+        } else {
+            Ring(content.todayProgress, todayColor, Modifier.padding(4.dp))
+        }
         Ring(content.slotProgress, slotColor, Modifier.padding(4.dp + RingStroke + RingGap))
 
         Column(
@@ -124,8 +129,8 @@ private val RingGap = 3.dp
  * back it can show a stale value indefinitely.
  */
 @Composable
-private fun Ring(progress: Float, color: Color, modifier: Modifier) {
-    val ringColors = ProgressIndicatorDefaults.colors(indicatorColor = color, trackColor = Color(LocalAppTheme.current.track))
+private fun Ring(progress: Float, color: Color, modifier: Modifier, trackColor: Color = Color(LocalAppTheme.current.track)) {
+    val ringColors = ProgressIndicatorDefaults.colors(indicatorColor = color, trackColor = trackColor)
     Spacer(
         modifier = modifier
             .fillMaxSize()

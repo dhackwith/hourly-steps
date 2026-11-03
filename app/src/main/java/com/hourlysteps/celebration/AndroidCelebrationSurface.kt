@@ -13,6 +13,7 @@ import com.hourlysteps.domain.Celebration
 import com.hourlysteps.domain.CelebrationKind
 import com.hourlysteps.domain.SlotWording
 import com.hourlysteps.domain.Streaks
+import com.hourlysteps.domain.StretchGoals
 import com.hourlysteps.domain.VibrationStrength
 import com.hourlysteps.reminder.Attention
 import com.hourlysteps.reminder.Haptics
@@ -114,8 +115,10 @@ class AndroidCelebrationSurface(
             CelebrationKind.SLOT_GOAL -> context.getString(R.string.celebration_slot_title, SlotWording.goalName(celebration.slotMinutes))
             CelebrationKind.INACTIVITY_GOAL -> context.getString(R.string.celebration_inactivity_title)
             CelebrationKind.DAILY_GOAL -> context.getString(R.string.celebration_daily_title)
+            CelebrationKind.STRETCH_GOAL ->
+                context.getString(R.string.celebration_stretch_title, StretchGoals.name(celebration.stretchLevel, celebration.stretchCount))
         }
-        val text = if (celebration.kind == CelebrationKind.DAILY_GOAL) {
+        val text = if (celebration.kind == CelebrationKind.DAILY_GOAL || celebration.kind == CelebrationKind.STRETCH_GOAL) {
             listOfNotNull(
                 context.getString(R.string.celebration_steps_today, formatSteps(celebration.todayTotal)),
                 Streaks.line(celebration.streak),

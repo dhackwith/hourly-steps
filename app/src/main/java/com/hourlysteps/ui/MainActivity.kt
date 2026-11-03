@@ -24,6 +24,7 @@ import com.hourlysteps.ui.settings.PauseScreen
 import com.hourlysteps.ui.settings.PickerTarget
 import com.hourlysteps.ui.settings.PlanEditorScreen
 import com.hourlysteps.ui.settings.SettingsScreen
+import com.hourlysteps.ui.settings.StretchGoalsScreen
 import com.hourlysteps.ui.settings.ThemeScreen
 import com.hourlysteps.ui.settings.ValuePickerScreen
 import com.hourlysteps.ui.settings.WeekEditorScreen
@@ -72,6 +73,7 @@ private object Routes {
     const val WEEK = "week"
     const val PAUSE = "pause"
     const val THEME = "theme"
+    const val STRETCH_GOALS = "stretch_goals"
     const val PLAN = "plan/{plan}"
     const val PICKER = "picker/{target}/{plan}"
     fun plan(id: PlanId) = "plan/${id.name}"
@@ -108,6 +110,7 @@ private fun HourlyStepsNavHost(container: AppContainer, startOnPermissions: Bool
                 onOpenWeek = { navController.navigate(Routes.WEEK) },
                 onOpenPause = { navController.navigate(Routes.PAUSE) },
                 onOpenTheme = { navController.navigate(Routes.THEME) },
+                onOpenStretchGoals = { navController.navigate(Routes.STRETCH_GOALS) },
                 onPickInactivity = { navController.navigate(Routes.picker(PickerTarget.INACTIVITY_THRESHOLD)) },
                 onOpenPermissions = { navController.navigate(Routes.PERMISSIONS) },
             )
@@ -123,6 +126,9 @@ private fun HourlyStepsNavHost(container: AppContainer, startOnPermissions: Bool
         composable(Routes.WEEK) { WeekEditorScreen(container.settingsRepository, container.reminderControls) }
         composable(Routes.PAUSE) { PauseScreen(container.settingsRepository, container.reminderControls, container.clock, onDone = { navController.popBackStack() }) }
         composable(Routes.THEME) { ThemeScreen(container.settingsRepository, container.reminderControls) }
+        composable(Routes.STRETCH_GOALS) {
+            StretchGoalsScreen(container.settingsRepository, container.reminderControls, onPick = { navController.navigate(Routes.picker(it)) })
+        }
         composable(Routes.PICKER) { entry ->
             val target = entry.arguments?.getString("target")
                 ?.let { runCatching { PickerTarget.valueOf(it) }.getOrNull() }
