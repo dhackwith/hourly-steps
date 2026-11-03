@@ -75,13 +75,13 @@ data class TodaySummary(
             val current = Slots.at(settings.schedule, now)
             val rows = plan?.let { p ->
                 val slots = Slots.forDay(p, slotMinutes, today)
-                val upcomingGoal = upcomingGoal(p, slots.size, current, total, current?.let { stepsIn(it, points, zone) } ?: 0)
+                val upcomingGoal = upcomingGoal(settings, p, slots.size, current, total, current?.let { stepsIn(it, points, zone) } ?: 0)
                 slots.map { slot ->
                     val start = slot.startAt(zone).toInstant().toEpochMilli()
                     val end = slot.endAt(zone).toInstant().toEpochMilli()
                     val steps = stepsIn(slot, points, zone)
                     val totalAtStart = points.filter { it.endMillis <= start }.sumOf { it.steps }
-                    val goal = if (nowMillis < start) upcomingGoal else GoalCalculator.slotGoalFromRemaining(p.dailyGoal, slot, totalAtStart)
+                    val goal = if (nowMillis < start) GoalCalculator.withInactivityFloor(settings, slot, upcomingGoal) else GoalCalculator.slotGoalFor(settings, p, slot, totalAtStart)
                     val check = lastCheckBySlot[slot.startMinute]
                     when {
                         steps >= goal && totalAtStart < p.dailyGoal -> SlotRow(slot, steps, goal, SlotOutcome.HIT)
@@ -121,10 +121,10 @@ data class TodaySummary(
          * A forecast for the slots still to come, assuming [current] at least reaches its goal.
          * They can only share out what's left evenly, so they all show the same figure.
          */
-        private fun upcomingGoal(plan: DayPlan, slotCount: Int, current: Slot?, total: Int, stepsInCurrent: Int): Int {
+        private fun upcomingGoal(settings: Settings, plan: DayPlan, slotCount: Int, current: Slot?, total: Int, stepsInCurrent: Int): Int {
             val expected = current?.let {
                 val totalAtStart = total - stepsInCurrent
-                maxOf(total, totalAtStart + GoalCalculator.slotGoalFromRemaining(plan.dailyGoal, it, totalAtStart))
+                maxOf(total, totalAtStart + GoalCalculator.slotGoalFor(settings, plan, it, totalAtStart))
             } ?: total
             val slotsLeft = current?.let { it.count - it.index - 1 } ?: slotCount
             return minOf(

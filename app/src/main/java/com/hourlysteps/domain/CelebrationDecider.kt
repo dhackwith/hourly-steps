@@ -82,7 +82,7 @@ object CelebrationDecider {
         val totalAtSlotStart = todayTotal - stepsInSlot
         return when {
             totalAtSlotStart < plan.dailyGoal ->
-                CelebrationKind.SLOT_GOAL to GoalCalculator.slotGoalFromRemaining(plan.dailyGoal, slot, totalAtSlotStart)
+                CelebrationKind.SLOT_GOAL to GoalCalculator.slotGoalFor(settings, plan, slot, totalAtSlotStart)
             settings.inactivityEnabled ->
                 CelebrationKind.INACTIVITY_GOAL to GoalCalculator.inactivityGoal(settings.inactivityThreshold, slot.lengthMinutes)
             else -> null

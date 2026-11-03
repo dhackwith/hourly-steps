@@ -26,6 +26,21 @@ object GoalCalculator {
             ceilDiv((dailyGoal - totalAtSlotStart).coerceAtLeast(0), (slot.count - slot.index).coerceAtLeast(1)),
         )
 
+    /**
+     * The goal a slot is really held to. With inactivity reminders on, it never drops below the
+     * inactivity goal, so the last stretch of the day doesn't ask for less than the hours after it.
+     */
+    fun slotGoalFor(settings: Settings, plan: DayPlan, slot: Slot, totalAtSlotStart: Int): Int =
+        withInactivityFloor(settings, slot, slotGoalFromRemaining(plan.dailyGoal, slot, totalAtSlotStart))
+
+    /** A goal of 0 means the daily goal is already met, so there is nothing to hold up. */
+    fun withInactivityFloor(settings: Settings, slot: Slot, goal: Int): Int =
+        if (settings.inactivityEnabled && goal > 0) {
+            maxOf(goal, inactivityGoal(settings.inactivityThreshold, slot.lengthMinutes))
+        } else {
+            goal
+        }
+
     fun ceilDiv(numerator: Int, denominator: Int): Int =
         (numerator + denominator - 1) / denominator
 }

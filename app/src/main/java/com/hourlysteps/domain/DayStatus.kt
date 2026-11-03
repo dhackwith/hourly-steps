@@ -67,7 +67,7 @@ data class DayStatus(
             val slotGoal = when {
                 plan == null -> 0
                 slot != null && mode == CheckMode.GOAL ->
-                    GoalCalculator.slotGoalFromRemaining(plan.dailyGoal, slot, todayTotal - stepsInSlot)
+                    GoalCalculator.slotGoalFor(settings, plan, slot, todayTotal - stepsInSlot)
                 else -> GoalCalculator.slotGoal(plan, slotMinutes)
             }
             val paceTarget = if (kind == DayStatusKind.ACTIVE && mode == CheckMode.GOAL && plan != null && slot != null) {

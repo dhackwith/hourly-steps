@@ -24,7 +24,7 @@ object CheckDecider {
     fun decide(settings: Settings, plan: DayPlan, slot: Slot, stepsInSlot: Int, todayTotal: Int): CheckResult {
         return when (modeFor(settings, plan, todayTotal)) {
             CheckMode.GOAL -> {
-                val goal = GoalCalculator.slotGoalFromRemaining(plan.dailyGoal, slot, todayTotal - stepsInSlot)
+                val goal = GoalCalculator.slotGoalFor(settings, plan, slot, todayTotal - stepsInSlot)
                 if (stepsInSlot >= goal) CheckResult.None
                 else CheckResult.GoalShortfall(need = goal - stepsInSlot)
             }

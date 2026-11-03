@@ -64,7 +64,20 @@ class CheckDeciderTest {
     fun `inactivity on but goal not yet met is still a goal check`() {
         val s = defaults.copy(inactivityEnabled = true, inactivityThreshold = 250)
         assertEquals(CheckMode.GOAL, CheckDecider.modeFor(s, plan, 6999))
-        assertEquals(CheckResult.GoalShortfall(need = 1), decide(s, steps = 0, total = 6999, hour = 18))
+        assertEquals(CheckResult.GoalShortfall(need = 250), decide(s, steps = 0, total = 6999, hour = 18))
+    }
+
+    @Test
+    fun `near the end of the goal, a reminder asks for the inactivity goal`() {
+        val s = defaults.copy(inactivityEnabled = true, inactivityThreshold = 200)
+        assertEquals(CheckResult.GoalShortfall(170), decide(s, steps = 30, total = 6980, hour = 19))
+    }
+
+    @Test
+    fun `the slot's target doesn't change when the daily goal is met during it`() {
+        val s = defaults.copy(inactivityEnabled = true, inactivityThreshold = 200)
+        assertEquals(CheckResult.GoalShortfall(150), decide(s, steps = 50, total = 6999, hour = 19))
+        assertEquals(CheckResult.InactivityShortfall(149), decide(s, steps = 51, total = 7000, hour = 19))
     }
 
     @Test

@@ -108,6 +108,38 @@ class GoalCalculatorTest {
     }
 
     @Test
+    fun `with inactivity reminders on, the goal stays at the inactivity goal late in the day`() {
+        val settings = Settings(inactivityEnabled = true, inactivityThreshold = 200)
+        assertEquals(200, GoalCalculator.slotGoalFor(settings, plan, slot(19), 6950))
+        assertEquals(584, GoalCalculator.slotGoalFor(settings, plan, slot(19), 5500))
+    }
+
+    @Test
+    fun `with inactivity reminders off, the goal can fall below the inactivity goal`() {
+        val settings = Settings(inactivityEnabled = false, inactivityThreshold = 200)
+        assertEquals(50, GoalCalculator.slotGoalFor(settings, plan, slot(19), 6950))
+    }
+
+    @Test
+    fun `the inactivity floor follows whatever the wearer set`() {
+        val settings = Settings(inactivityEnabled = true, inactivityThreshold = 350)
+        assertEquals(350, GoalCalculator.slotGoalFor(settings, plan, slot(19), 6950))
+    }
+
+    @Test
+    fun `the inactivity floor is a rate, so a half hour needs half of it`() {
+        val settings = Settings(inactivityEnabled = true, inactivityThreshold = 200)
+        val halfHours = Slots.forDay(plan, 30, LocalDate.of(2026, 6, 10))
+        assertEquals(100, GoalCalculator.slotGoalFor(settings, plan, halfHours.last(), 6990))
+    }
+
+    @Test
+    fun `the inactivity floor doesn't invent a goal once the daily goal is met`() {
+        val settings = Settings(inactivityEnabled = true, inactivityThreshold = 200)
+        assertEquals(0, GoalCalculator.slotGoalFor(settings, plan, slot(19), 7000))
+    }
+
+    @Test
     fun `the goal follows the slot length`() {
         // 2,400 by 11 AM, 4,600 to go across 18 half hours.
         val halfHours = Slots.forDay(plan, 30, LocalDate.of(2026, 6, 10))
