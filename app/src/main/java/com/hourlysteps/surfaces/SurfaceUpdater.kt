@@ -14,21 +14,26 @@ private const val MIN_INTERVAL_MS = 60_000L
 /** Asks the system to refresh the tile and complications when their numbers may have changed. */
 class SurfaceUpdater(private val context: Context) : SurfaceRefresher {
 
-    @Volatile
-    private var lastUpdate = 0L
+    private val throttle = RefreshThrottle(MIN_INTERVAL_MS)
 
     /** After a step batch. At most once a minute, to save battery while walking. */
     fun onStepsChanged() {
-        val now = SystemClock.elapsedRealtime()
-        if (lastUpdate != 0L && now - lastUpdate < MIN_INTERVAL_MS) return
-        update(now)
+        if (throttle.allowBatch(SystemClock.elapsedRealtime())) update()
     }
 
     /** After something the wearer did or a check: they expect to see it right away. */
-    override fun updateNow() = update(SystemClock.elapsedRealtime())
+    override fun updateNow() {
+        throttle.refreshed(SystemClock.elapsedRealtime())
+        update()
+    }
 
-    private fun update(now: Long) {
-        lastUpdate = now
+    /** The last slot's steps may still be on their way, and they change the new slot's numbers when they land. */
+    override fun refreshForNewSlot() {
+        update()
+        throttle.openForNextBatch()
+    }
+
+    private fun update() {
         runCatching {
             TileService.getUpdater(context).requestUpdate(HourlyStepsTileService::class.java)
             listOf(

@@ -32,6 +32,7 @@ class ReminderReceiver : BroadcastReceiver() {
             } catch (t: Throwable) {
                 Log.e(TAG, "Handling $action failed", t)
                 if (action == ACTION_CHECK) runCatching { container.reminderScheduler.ensureScheduled() }
+                if (action == ACTION_SLOT_CHANGE) runCatching { container.reminderScheduler.scheduleSlotChange() }
             } finally {
                 if (wakeLock.isHeld) wakeLock.release()
                 pending.finish()
@@ -55,11 +56,7 @@ class ReminderReceiver : BroadcastReceiver() {
             ACTION_PAUSE_TODAY -> container.reminderControls.pauseToday()
             // New steps come back through the passive listener, which decides whether to look again.
             ACTION_CHECK_STEPS -> container.stepsRepository.flush()
-            ACTION_SLOT_CHANGE -> {
-                Log.i(TAG, "Slot changed; refreshing the tile and complications")
-                container.surfaceUpdater.updateNow()
-                container.reminderScheduler.scheduleSlotChange()
-            }
+            ACTION_SLOT_CHANGE -> container.slotChange.run()
         }
     }
 

@@ -12,6 +12,7 @@ import com.hourlysteps.domain.Settings
 import com.hourlysteps.domain.SettingsEditor
 import com.hourlysteps.domain.SettingsSource
 import com.hourlysteps.domain.Slot
+import com.hourlysteps.domain.SlotChangeAlarm
 import com.hourlysteps.domain.StepCheckAlarm
 import com.hourlysteps.domain.StepCounts
 import com.hourlysteps.domain.StepMonitoring
@@ -26,6 +27,7 @@ import com.hourlysteps.reminder.ReminderArming
 import com.hourlysteps.reminder.ReminderPresenter
 import java.time.LocalDate
 import java.time.ZonedDateTime
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
@@ -68,9 +70,22 @@ class FakeArming(private val events: Events) : ReminderArming {
 class FakeSteps(private val events: Events, var inSlot: Int = 0, var total: Int = 0) : StepCounts {
     /** Steps the watch is still holding, which only count after a flush. */
     var heldBack = 0
+    var flushFails = false
+    /** The flush never finishes, like a watch that stops answering. */
+    var flushHangs = false
 
     override suspend fun flush() {
         events.add("flush")
+        inSlot += heldBack
+        total += heldBack
+        heldBack = 0
+    }
+
+    override suspend fun flushAndAwaitBatch() {
+        events.add("flush and wait")
+        if (flushFails) error("Health Services unavailable")
+        if (flushHangs) awaitCancellation()
+        events.add("steps recorded $heldBack")
         inSlot += heldBack
         total += heldBack
         heldBack = 0
@@ -92,6 +107,11 @@ class FakeStreaks(private val events: Events, var current: Int = 0) : StreakTrac
 
 class FakeSurfaces(private val events: Events) : SurfaceRefresher {
     override fun updateNow() = events.add("refresh surfaces")
+    override fun refreshForNewSlot() = events.add("refresh for new slot")
+}
+
+class FakeSlotChangeAlarm(private val events: Events) : SlotChangeAlarm {
+    override suspend fun scheduleSlotChange() = events.add("arm slot change")
 }
 
 class FakeStepCheckAlarm(private val events: Events) : StepCheckAlarm {

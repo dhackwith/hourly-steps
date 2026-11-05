@@ -24,6 +24,7 @@ import com.hourlysteps.reminder.ReminderControls
 import com.hourlysteps.reminder.ReminderDismissal
 import com.hourlysteps.reminder.ReminderNotifier
 import com.hourlysteps.reminder.ReminderScheduler
+import com.hourlysteps.reminder.SlotChange
 import com.hourlysteps.surfaces.SurfaceUpdater
 import java.time.Clock
 import kotlinx.coroutines.CoroutineScope
@@ -67,6 +68,7 @@ class AppContainer(context: Context) {
         isOnCharger = { Charger.isConnected(context) },
         clock = clock,
     )
+    val slotChange = SlotChange(stepsRepository, surfaceUpdater, reminderScheduler)
     val reminderControls = ReminderControls(
         settingsEditor = settingsRepository,
         stepMonitoring = stepsRepository,

@@ -19,6 +19,8 @@ interface StepMonitoring {
 interface StepCounts {
     /** Asks the watch to hand over any steps it's still holding. */
     suspend fun flush()
+    /** Flushes, then waits a few seconds for what it hands over to be recorded. Returns early if nothing comes. */
+    suspend fun flushAndAwaitBatch()
     suspend fun stepsInSlot(slot: Slot): Int
     suspend fun dayTotal(date: LocalDate): Int
     suspend fun pruneOlderThan(days: Long)
@@ -37,6 +39,13 @@ interface StreakTracker {
 /** Refreshes what's shown outside the app: the tile and complications. */
 interface SurfaceRefresher {
     fun updateNow()
+    /** Refreshes for a slot that just started, and lets the next step batch refresh again however soon it comes. */
+    fun refreshForNewSlot()
+}
+
+interface SlotChangeAlarm {
+    /** Arms the refresh at the start of the next slot. */
+    suspend fun scheduleSlotChange()
 }
 
 interface StepCheckAlarm {

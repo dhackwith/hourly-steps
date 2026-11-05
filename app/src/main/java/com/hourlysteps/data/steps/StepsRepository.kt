@@ -20,8 +20,11 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZonedDateTime
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withTimeoutOrNull
 
 private const val TAG = "StepsRepository"
@@ -34,6 +37,9 @@ class StepsRepository(
 ) : StepCounts, StepMonitoring {
     private val client: PassiveMonitoringClient
         get() = HealthServices.getClient(context).passiveMonitoringClient
+
+    /** Step batches recorded so far, so a flush can wait for the one it asked for. */
+    private val batches = MutableStateFlow(0L)
 
     suspend fun supportsSteps(): Boolean = runCatching {
         client.getCapabilitiesAsync().await()
@@ -67,6 +73,14 @@ class StepsRepository(
         if (done == null) Log.w(TAG, "flush timed out")
     }
 
+    /** A finished flush only means Health Services has sent the steps; the listener may not have run yet. */
+    override suspend fun flushAndAwaitBatch() {
+        val before = batches.value
+        flush()
+        val arrived = withTimeoutOrNull(BATCH_WAIT_MS) { batches.first { it != before } }
+        if (arrived == null) Log.i(TAG, "No steps came after the flush")
+    }
+
     suspend fun record(points: List<IntervalDataPoint<Long>>) {
         val bootInstant = Instant.ofEpochMilli(System.currentTimeMillis() - SystemClock.elapsedRealtime())
         val entities = points.filter { it.value > 0 }.map { point ->
@@ -77,6 +91,7 @@ class StepsRepository(
             )
         }
         if (entities.isNotEmpty()) dao.insertAll(entities)
+        batches.update { it + 1 }
     }
 
     override suspend fun stepsInSlot(slot: Slot): Int =
@@ -113,5 +128,6 @@ class StepsRepository(
 
     private companion object {
         const val FLUSH_TIMEOUT_MS = 5_000L
+        const val BATCH_WAIT_MS = 3_000L
     }
 }

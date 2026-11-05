@@ -8,6 +8,7 @@ import android.os.Build
 import android.util.Log
 import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.domain.ReminderSchedule
+import com.hourlysteps.domain.SlotChangeAlarm
 import com.hourlysteps.domain.StepCheckAlarm
 import java.time.Clock
 import java.time.ZonedDateTime
@@ -22,7 +23,7 @@ class ReminderScheduler(
     private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val clock: Clock,
-) : ReminderAlarms, ReminderArming, StepCheckAlarm {
+) : ReminderAlarms, ReminderArming, StepCheckAlarm, SlotChangeAlarm {
     private val alarmManager: AlarmManager
         get() = context.getSystemService(AlarmManager::class.java)
 
@@ -53,7 +54,7 @@ class ReminderScheduler(
     }
 
     /** Arms the refresh of the tile and complications for when the current slot changes. */
-    suspend fun scheduleSlotChange() {
+    override suspend fun scheduleSlotChange() {
         val next = ReminderSchedule.nextSlotChange(ZonedDateTime.now(clock), settingsRepository.current())
         if (next == null) {
             alarmManager.cancel(slotChangeIntent())
