@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 private const val TAG = "ReminderReceiver"
 
-/** Alarms for slot checks, follow-ups, step checks and slot changes, and the buttons on a reminder notification. */
+/** Alarms for slot checks, follow-ups, step checks, slot changes and surface catch-ups, and the buttons on a reminder notification. */
 class ReminderReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -57,6 +57,7 @@ class ReminderReceiver : BroadcastReceiver() {
             // New steps come back through the passive listener, which decides whether to look again.
             ACTION_CHECK_STEPS -> container.stepsRepository.flush()
             ACTION_SLOT_CHANGE -> container.slotChange.run()
+            ACTION_REFRESH_SURFACES -> container.surfaceUpdater.onCatchUp()
         }
     }
 
@@ -67,9 +68,10 @@ class ReminderReceiver : BroadcastReceiver() {
         const val ACTION_PAUSE_TODAY = "com.hourlysteps.action.PAUSE_TODAY"
         const val ACTION_CHECK_STEPS = "com.hourlysteps.action.CHECK_STEPS"
         const val ACTION_SLOT_CHANGE = "com.hourlysteps.action.SLOT_CHANGE"
+        const val ACTION_REFRESH_SURFACES = "com.hourlysteps.action.REFRESH_SURFACES"
         const val EXTRA_SCHEDULED_AT = "scheduled_at"
         const val EXTRA_FOLLOW_UP_KIND = "follow_up_kind"
-        private val HANDLED_ACTIONS = setOf(ACTION_CHECK, ACTION_FOLLOW_UP, ACTION_SNOOZE, ACTION_PAUSE_TODAY, ACTION_CHECK_STEPS, ACTION_SLOT_CHANGE)
+        private val HANDLED_ACTIONS = setOf(ACTION_CHECK, ACTION_FOLLOW_UP, ACTION_SNOOZE, ACTION_PAUSE_TODAY, ACTION_CHECK_STEPS, ACTION_SLOT_CHANGE, ACTION_REFRESH_SURFACES)
         private const val WAKE_LOCK_TIMEOUT_MS = 30_000L
     }
 }

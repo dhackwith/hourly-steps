@@ -5,11 +5,13 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.SystemClock
 import android.util.Log
 import com.hourlysteps.data.settings.SettingsRepository
 import com.hourlysteps.domain.ReminderSchedule
 import com.hourlysteps.domain.SlotChangeAlarm
 import com.hourlysteps.domain.StepCheckAlarm
+import com.hourlysteps.domain.SurfaceCatchUpAlarm
 import java.time.Clock
 import java.time.ZonedDateTime
 
@@ -23,7 +25,7 @@ class ReminderScheduler(
     private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val clock: Clock,
-) : ReminderAlarms, ReminderArming, StepCheckAlarm, SlotChangeAlarm {
+) : ReminderAlarms, ReminderArming, StepCheckAlarm, SlotChangeAlarm, SurfaceCatchUpAlarm {
     private val alarmManager: AlarmManager
         get() = context.getSystemService(AlarmManager::class.java)
 
@@ -53,13 +55,9 @@ class ReminderScheduler(
         alarmManager.cancel(slotChangeIntent())
     }
 
-    /** Arms the refresh of the tile and complications for when the current slot changes. */
+    /** Arms the refresh of the tile and complications for when the current slot changes or the day ends. */
     override suspend fun scheduleSlotChange() {
-        val next = ReminderSchedule.nextSlotChange(ZonedDateTime.now(clock), settingsRepository.current())
-        if (next == null) {
-            alarmManager.cancel(slotChangeIntent())
-            return
-        }
+        val next = ReminderSchedule.nextSurfaceChange(ZonedDateTime.now(clock), settingsRepository.current())
         val millis = next.toInstant().toEpochMilli()
         if (canScheduleExact()) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, millis, slotChangeIntent())
@@ -109,6 +107,17 @@ class ReminderScheduler(
         }
     }
 
+    /** Not a wake-up alarm: it runs the next time the watch is awake anyway, so catching up never wakes it. */
+    override fun scheduleSurfaceCatchUp(delayMs: Long) {
+        val pi = PendingIntent.getBroadcast(
+            context,
+            SURFACE_CATCH_UP_REQUEST_CODE,
+            Intent(context, ReminderReceiver::class.java).setAction(ReminderReceiver.ACTION_REFRESH_SURFACES),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        alarmManager.set(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + delayMs, pi)
+    }
+
     override fun cancelFollowUp() {
         alarmManager.cancel(followUpIntent(0L, FollowUpKind.SNOOZE))
     }
@@ -156,6 +165,7 @@ class ReminderScheduler(
         const val REQUEST_CODE = 1
         const val STEP_CHECK_REQUEST_CODE = 4
         const val SLOT_CHANGE_REQUEST_CODE = 5
+        const val SURFACE_CATCH_UP_REQUEST_CODE = 6
         const val STEP_CHECK_DELAY_MS = 60_000L
         const val FOLLOW_UP_REQUEST_CODE = 3
         const val FALLBACK_WINDOW_MS = 10 * 60 * 1000L

@@ -75,6 +75,7 @@
                 android:resource="@drawable/tile_preview" />
         </service>
 
+        <!-- The app asks for a refresh whenever a complication's numbers change, so none of them polls. -->
         <service
             android:name=".surfaces.SlotComplicationService"
             android:exported="true"
@@ -89,7 +90,7 @@
                 android:value="RANGED_VALUE,SHORT_TEXT,LONG_TEXT" />
             <meta-data
                 android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
-                android:value="300" />
+                android:value="0" />
         </service>
 
         <service
@@ -106,7 +107,7 @@
                 android:value="RANGED_VALUE,SHORT_TEXT,LONG_TEXT" />
             <meta-data
                 android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
-                android:value="300" />
+                android:value="0" />
         </service>
 
         <service
@@ -123,7 +124,7 @@
                 android:value="RANGED_VALUE,SHORT_TEXT,LONG_TEXT" />
             <meta-data
                 android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
-                android:value="3600" />
+                android:value="0" />
         </service>
 
         <service
@@ -140,7 +141,7 @@
                 android:value="RANGED_VALUE,SHORT_TEXT,LONG_TEXT" />
             <meta-data
                 android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
-                android:value="3600" />
+                android:value="0" />
         </service>
 
         <receiver

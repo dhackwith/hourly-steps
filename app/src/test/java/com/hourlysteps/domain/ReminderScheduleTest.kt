@@ -31,6 +31,27 @@ class ReminderScheduleTest {
     }
 
     @Test
+    fun `the surfaces next change with the slot during the day`() {
+        assertEquals(at(day, 14, 0), ReminderSchedule.nextSurfaceChange(at(day, 13, 8), defaults))
+    }
+
+    @Test
+    fun `after the last slot the surfaces next change at midnight`() {
+        assertEquals(at(day.plusDays(1), 0, 0), ReminderSchedule.nextSurfaceChange(at(day, 20, 0), defaults))
+    }
+
+    @Test
+    fun `from midnight the surfaces next change with the first slot`() {
+        assertEquals(at(day, 8, 0), ReminderSchedule.nextSurfaceChange(at(day, 0, 0), defaults))
+    }
+
+    @Test
+    fun `the surfaces still change at midnight while paused until resumed`() {
+        val paused = defaults.copy(pausedThrough = Settings.PAUSED_UNTIL_RESUMED)
+        assertEquals(at(day.plusDays(1), 0, 0), ReminderSchedule.nextSurfaceChange(at(day, 13, 8), paused))
+    }
+
+    @Test
     fun `the next slot change is the top of the next hour`() {
         assertEquals(at(day, 14, 0), ReminderSchedule.nextSlotChange(at(day, 13, 8), defaults))
     }

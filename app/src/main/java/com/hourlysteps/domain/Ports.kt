@@ -44,8 +44,13 @@ interface SurfaceRefresher {
 }
 
 interface SlotChangeAlarm {
-    /** Arms the refresh at the start of the next slot. */
+    /** Arms the refresh at the start of the next slot or the next day, whichever comes first. */
     suspend fun scheduleSlotChange()
+}
+
+interface SurfaceCatchUpAlarm {
+    /** Arms a refresh for the first time the watch is awake after [delayMs], replacing any already armed. */
+    fun scheduleSurfaceCatchUp(delayMs: Long)
 }
 
 interface StepCheckAlarm {

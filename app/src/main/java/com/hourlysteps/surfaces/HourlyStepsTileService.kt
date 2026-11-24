@@ -28,16 +28,13 @@ import com.hourlysteps.HourlyStepsApp
 import com.hourlysteps.domain.AppTheme
 import com.hourlysteps.domain.DayStatus
 import com.hourlysteps.ui.MainActivity
-import java.time.Duration
-import java.time.ZonedDateTime
 import kotlinx.coroutines.Dispatchers
 
 private const val RESOURCES_VERSION = "1"
 private const val OUTER_THICKNESS_DP = 9f
 private const val INNER_THICKNESS_DP = 8f
 private const val RING_GAP_DP = 4f
-private const val MAX_FRESHNESS_MS = 5 * 60_000L
-private const val MIN_FRESHNESS_MS = 60_000L
+private const val PACE_FRESHNESS_MS = 5 * 60_000L
 
 /** The swipe-from-the-watch-face card: today's total in the outer ring, this slot in the inner. */
 class HourlyStepsTileService : TileService() {
@@ -60,12 +57,11 @@ class HourlyStepsTileService : TileService() {
             Resources.Builder().setVersion(RESOURCES_VERSION).build()
         }
 
-    /** Refresh when the slot rolls over, so a still wearer doesn't see the last slot's count. */
-    private fun freshnessMillis(status: DayStatus): Long {
-        val now = ZonedDateTime.now(container.clock)
-        val untilSlotEnd = status.slot?.let { Duration.between(now, it.endAt(now.zone)).toMillis() } ?: MAX_FRESHNESS_MS
-        return untilSlotEnd.coerceIn(MIN_FRESHNESS_MS, MAX_FRESHNESS_MS)
-    }
+    /**
+     * The app asks for a refresh whenever the numbers change, so the tile only polls while it shows
+     * pace, which moves with the clock. Zero means no polling.
+     */
+    private fun freshnessMillis(status: DayStatus): Long = if (status.paceTarget != null) PACE_FRESHNESS_MS else 0L
 
     private fun tileLayout(content: RingContent, theme: AppTheme): LayoutElement {
         val open = ModifiersBuilders.Clickable.Builder()

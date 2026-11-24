@@ -14,6 +14,12 @@ class RefreshThrottle(private val minIntervalMs: Long) {
         return true
     }
 
+    /** How long from [now] until a batch may refresh, or 0 if one already may. */
+    fun waitMs(now: Long): Long {
+        val last = lastRefresh ?: return 0
+        return (last + minIntervalMs - now).coerceAtLeast(0)
+    }
+
     /** Something else refreshed at [now]. */
     fun refreshed(now: Long) {
         lastRefresh = now

@@ -20,6 +20,16 @@ object ReminderSchedule {
     fun nextSlotChange(now: ZonedDateTime, settings: Settings): ZonedDateTime? =
         firstAfter(now, settings) { listOf(it.startAt(now.zone), it.endAt(now.zone)) }
 
+    /**
+     * The next moment the tile and complications go out of date without any steps arriving: a slot
+     * change, or midnight, when today's total starts again. Midnight counts on days off and while
+     * paused too.
+     */
+    fun nextSurfaceChange(now: ZonedDateTime, settings: Settings): ZonedDateTime {
+        val midnight = now.toLocalDate().plusDays(1).atStartOfDay(now.zone)
+        return nextSlotChange(now, settings)?.takeIf { it.isBefore(midnight) } ?: midnight
+    }
+
     private fun firstAfter(now: ZonedDateTime, settings: Settings, times: (Slot) -> List<ZonedDateTime>): ZonedDateTime? {
         val paused = settings.pausedThrough
         if (paused == Settings.PAUSED_UNTIL_RESUMED) return null

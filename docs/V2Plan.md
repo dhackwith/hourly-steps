@@ -170,9 +170,9 @@ day for an irregular week (e.g. A A Off B B A Off); days off and paused days ski
 - The Home screen draws the same pair with the same colours, and both use one `RingContent`,
   so the app and the tile always match.
 - Tap anywhere opens the app. Resuming a pause happens on Home.
-- Freshness: refreshes at the slot boundary or after 5 minutes, whichever is sooner, plus
-  `TileService.getUpdater().requestUpdate()` after step batches (at most once a minute), checks
-  and settings changes.
+- Freshness: `TileService.getUpdater().requestUpdate()` after step batches (at most once a minute),
+  checks, settings changes, each slot change and midnight. The tile itself only polls, every
+  5 minutes, while it shows pace, which moves with the clock.
 
 **Complications** (`watchface-complications-data-source-ktx` 1.3.0): two data sources, because a
 single slot is too small for two rings. A watch face can show both side by side.
@@ -181,8 +181,8 @@ single slot is too small for two rings. A watch face can show both side by side.
 - Types: `RANGED_VALUE` (a gauge with "412"), `SHORT_TEXT` ("412" titled "of 584"), and
   `LONG_TEXT` ("412 of 584 this hour").
 - Tap opens the app. Updated with `ComplicationDataSourceUpdateRequester.requestUpdateAll()` on
-  the same triggers as the tile. The manifest declares a 5-minute update period as the fallback,
-  so a still wearer sees the new hour within 5 minutes.
+  the same triggers as the tile. The manifest declares no update period: polling woke the app
+  around the clock for numbers it already pushes.
 - Day off / paused shows "Off" / "Paused" with the gauge empty. "This hour" shows "--" outside
   the reminder window.
 

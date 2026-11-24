@@ -49,13 +49,13 @@ class AppContainer(context: Context) {
     val stepsRepository = StepsRepository(context, database.stepPointDao(), clock)
     val dayStatusProvider = DayStatusProvider(settingsRepository, stepsRepository, clock)
     val checkHistory = CheckHistory(database.checkLogDao())
-    val surfaceUpdater = SurfaceUpdater(context)
+    val reminderScheduler = ReminderScheduler(context, settingsRepository, clock)
+    val surfaceUpdater = SurfaceUpdater(context, catchUp = reminderScheduler)
     val activityStore = ActivityStore(context)
     val streakRepository = StreakRepository(database.daySummaryDao(), stepsRepository, settingsRepository, clock)
     val notificationChannels = NotificationChannels(context)
     val reminderNotifier = ReminderNotifier(context, notificationChannels, isUiVisible = { visibleScreens.anyVisible })
     val reminderDismissal = ReminderDismissal(reminderNotifier, settingsRepository, stepsRepository, clock)
-    val reminderScheduler = ReminderScheduler(context, settingsRepository, clock)
     val reminderCheck = ReminderCheck(
         settingsSource = settingsRepository,
         stepCounts = stepsRepository,
